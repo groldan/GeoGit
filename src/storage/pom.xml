@@ -18,6 +18,7 @@
   <modules>
    <module>bdbje</module>
    <module>mongo</module>
+   <module>bdbc</module>
    <module>neo4j</module>
   </modules>
 </project>

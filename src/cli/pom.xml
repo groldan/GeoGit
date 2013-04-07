@@ -22,7 +22,7 @@
     </dependency>
     <dependency>
       <groupId>org.geogit</groupId>
-      <artifactId>geogit-bdbje</artifactId>
+      <artifactId>geogit-bdbc</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -87,6 +87,7 @@
       <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
+    <!-- 
     <dependency>
       <groupId>org.geogit</groupId>
       <artifactId>geogit-bdbje</artifactId>
@@ -94,6 +95,7 @@
       <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
+     -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>

@@ -9,7 +9,7 @@ import java.io.File;
 import org.geogit.api.InjectorBuilder;
 import org.geogit.di.GeogitModule;
 import org.geogit.metrics.MetricsModule;
-import org.geogit.test.integration.je.JETestStorageModule;
+import org.geogit.storage.bdbc.BDBStorageModule;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -29,7 +29,7 @@ public class CLITestInjectorBuilder extends InjectorBuilder {
     @Override
     public Injector build() {
         TestPlatform testPlatform = new TestPlatform(workingDirectory, homeDirectory);
-        JETestStorageModule jeStorageModule = new JETestStorageModule();
+        BDBStorageModule jeStorageModule = new BDBStorageModule();
         FunctionalTestModule functionalTestModule = new FunctionalTestModule(testPlatform);
 
         Injector injector = Guice.createInjector(Modules.override(new GeogitModule()).with(

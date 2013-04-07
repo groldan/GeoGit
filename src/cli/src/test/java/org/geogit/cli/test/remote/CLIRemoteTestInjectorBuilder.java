@@ -9,7 +9,7 @@ import java.io.File;
 import org.geogit.api.InjectorBuilder;
 import org.geogit.cli.test.functional.TestPlatform;
 import org.geogit.di.GeogitModule;
-import org.geogit.storage.bdbje.JEStorageModule;
+import org.geogit.storage.bdbc.BDBStorageModule;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -29,7 +29,7 @@ public class CLIRemoteTestInjectorBuilder extends InjectorBuilder {
     @Override
     public Injector build() {
         TestPlatform testPlatform = new TestPlatform(workingDirectory, homeDirectory);
-        JEStorageModule jeStorageModule = new JEStorageModule();
+        BDBStorageModule jeStorageModule = new BDBStorageModule();
         RemoteFunctionalTestModule functionalTestModule = new RemoteFunctionalTestModule(
                 testPlatform);
 

@@ -65,7 +65,7 @@ public class RevTreeBuilderTest extends RepositoryTestCase {
 
     @Test
     public void testPutIterate() throws Exception {
-        final int numEntries = 1000 * 100;
+        final int numEntries = 1000 * 1000;
         ObjectId treeId;
 
         Stopwatch sw;

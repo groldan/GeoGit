@@ -40,7 +40,7 @@
         <artifactId>appassembler-maven-plugin</artifactId>
         <configuration>
           <!-- Extra JVM arguments that will be included in the bin scripts -->
-          <extraJvmArguments>-Xmx2G -XX:MaxPermSize=128m -Dorg.geotools.referencing.forceXY=true -XX:-HeapDumpOnOutOfMemoryError -XX:+UseCompressedOops</extraJvmArguments>
+          <extraJvmArguments>-Xmx2G -XX:MaxPermSize=128m -Dorg.geotools.referencing.forceXY=true -XX:-HeapDumpOnOutOfMemoryError -XX:+UseCompressedOops -Djava.library.path=/usr/local/BerkeleyDB.6.0/lib</extraJvmArguments>
           <!-- set alternative assemble directory -->
           <assembleDirectory>${project.build.directory}/geogit-build</assembleDirectory>
           <repositoryLayout>flat</repositoryLayout>

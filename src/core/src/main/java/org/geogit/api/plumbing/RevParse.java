@@ -330,8 +330,12 @@ public class RevParse extends AbstractGeoGitOp<Optional<ObjectId>> {
             boolean hexPatternMatches = HEX_PATTERN.matcher(refSpec).matches();
             if (hexPatternMatches) {
                 try {
-                    if (ObjectId.valueOf(refSpec).isNull()) {
+                    ObjectId objectId = ObjectId.valueOf(refSpec);
+                    if (objectId.isNull()) {
                         return Optional.of(ObjectId.NULL);
+                    }
+                    if (indexDb.exists(objectId)) {
+                        resolvedTo = objectId;
                     }
                 } catch (IllegalArgumentException ignore) {
                     // its a partial id
