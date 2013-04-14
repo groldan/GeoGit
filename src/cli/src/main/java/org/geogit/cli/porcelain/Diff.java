@@ -7,13 +7,23 @@ package org.geogit.cli.porcelain;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+import javax.annotation.Nullable;
 
 import org.geogit.api.GeoGIT;
+import org.geogit.api.plumbing.DiffBoundsOp;
+import org.geogit.api.plumbing.DiffCount;
 import org.geogit.api.plumbing.diff.DiffEntry;
 import org.geogit.api.porcelain.DiffOp;
 import org.geogit.cli.AbstractCommand;
 import org.geogit.cli.CLICommand;
 import org.geogit.cli.GeogitCLI;
+import org.geotools.geometry.jts.ReferencedEnvelope;
+import org.geotools.referencing.CRS;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
@@ -72,16 +82,20 @@ public class Diff extends AbstractCommand implements CLICommand {
             return;
         }
 
-        GeoGIT geogit = cli.getGeogit();
+        final GeoGIT geogit = cli.getGeogit();
 
-        DiffOp diff = geogit.command(DiffOp.class);
+        final DiffOp diff = geogit.command(DiffOp.class);
 
-        String oldVersion = resolveOldVersion();
-        String newVersion = resolveNewVersion();
+        @Nullable
+        final String oldVersion = resolveOldVersion();
+
+        @Nullable
+        final String newVersion = resolveNewVersion();
 
         diff.setOldVersion(oldVersion).setNewVersion(newVersion).setCompareIndex(cached);
 
         Iterator<DiffEntry> entries;
+
         if (paths.isEmpty()) {
             entries = diff.setProgressListener(cli.getProgressListener()).call();
         } else {
@@ -105,17 +119,65 @@ public class Diff extends AbstractCommand implements CLICommand {
             printer = new FullDiffPrinter(nogeom, false);
         }
 
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        Future<ReferencedEnvelope> diffBoundsPromise = runBoundsDiff(geogit, oldVersion,
+                newVersion, executor);
+        Future<Long> diffCountPromise = runCountDiff(geogit, oldVersion, newVersion, executor);
+
         DiffEntry entry;
         while (entries.hasNext()) {
             entry = entries.next();
             printer.print(geogit, cli.getConsole(), entry);
         }
+
+        executor.shutdown();
+        ReferencedEnvelope bounds = diffBoundsPromise.get();
+        Long diffCount = diffCountPromise.get();
+        cli.getConsole().println(String.format("# of changes: %d", diffCount));
+        cli.getConsole().println(
+                String.format("Bounds: [x1=%s, x2=%s, y1=%s, y2=%s, crs=%s]", bounds.getMinimum(0),
+                        bounds.getMaximum(0), bounds.getMinimum(1), bounds.getMaximum(1),
+                        CRS.toSRS(bounds.getCoordinateReferenceSystem())));
+        cli.getConsole().flush();
     }
 
+    private Future<Long> runCountDiff(final GeoGIT geogit, final String oldVersion,
+            final String newVersion, ExecutorService executor) {
+        Future<Long> diffCountPromise = executor.submit(new Callable<Long>() {
+
+            @Override
+            public Long call() throws Exception {
+                Long diffCount = geogit.command(DiffCount.class).setFilter(paths)
+                        .setOldVersion(oldVersion).setNewVersion(newVersion).call();
+                return diffCount;
+            }
+        });
+        return diffCountPromise;
+    }
+
+    private Future<ReferencedEnvelope> runBoundsDiff(final GeoGIT geogit, final String oldVersion,
+            final String newVersion, ExecutorService executor) {
+        Future<ReferencedEnvelope> diffBoundsPromise = executor
+                .submit(new Callable<ReferencedEnvelope>() {
+
+                    @Override
+                    public ReferencedEnvelope call() throws Exception {
+                        DiffBoundsOp boundsCmd = geogit.command(DiffBoundsOp.class)
+                                .setFilter(paths).setOldVersion(oldVersion)
+                                .setNewVersion(newVersion);
+                        ReferencedEnvelope diffBounds = boundsCmd.call();
+                        return diffBounds;
+                    }
+                });
+        return diffBoundsPromise;
+    }
+
+    @Nullable
     private String resolveOldVersion() {
         return refSpec.size() > 0 ? refSpec.get(0) : null;
     }
 
+    @Nullable
     private String resolveNewVersion() {
         return refSpec.size() > 1 ? refSpec.get(1) : null;
     }
