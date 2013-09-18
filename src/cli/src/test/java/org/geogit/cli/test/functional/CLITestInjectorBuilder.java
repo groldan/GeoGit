@@ -8,11 +8,11 @@ import java.io.File;
 
 import org.geogit.api.InjectorBuilder;
 import org.geogit.di.GeogitModule;
+import org.geogit.metrics.MetricsModule;
 import org.geogit.test.integration.je.JETestStorageModule;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.Module;
 import com.google.inject.util.Modules;
 
 public class CLITestInjectorBuilder extends InjectorBuilder {
@@ -32,18 +32,9 @@ public class CLITestInjectorBuilder extends InjectorBuilder {
         JETestStorageModule jeStorageModule = new JETestStorageModule();
         FunctionalTestModule functionalTestModule = new FunctionalTestModule(testPlatform);
 
-        return Guice.createInjector(Modules.override(new GeogitModule()).with(jeStorageModule,
-                functionalTestModule));
+        Injector injector = Guice.createInjector(Modules.override(new GeogitModule()).with(
+                jeStorageModule, functionalTestModule, new MetricsModule()));
+        return injector;
     }
 
-    @Override
-    public Injector buildWithOverrides(Module... overrides) {
-        TestPlatform testPlatform = new TestPlatform(workingDirectory, homeDirectory);
-        JETestStorageModule jeStorageModule = new JETestStorageModule();
-        FunctionalTestModule functionalTestModule = new FunctionalTestModule(testPlatform);
-
-        return Guice.createInjector(Modules.override(
-                Modules.override(new GeogitModule()).with(jeStorageModule, functionalTestModule))
-                .with(overrides));
-    }
 }

@@ -33,6 +33,7 @@ import org.opengis.util.ProgressListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -125,6 +126,7 @@ public class WriteTree2 extends AbstractGeoGitOp<ObjectId> {
      *         the index and the HEAD, or {@code null} if the operation has been cancelled (as
      *         indicated by the {@link #getProgressListener() progress listener}.
      */
+    @Timed
     @Override
     public ObjectId call() {
         Stopwatch sw = new Stopwatch().start();

@@ -84,6 +84,10 @@
       <groupId>com.tinkerpop.gremlin</groupId>
       <artifactId>gremlin-java</artifactId>
     </dependency>
+    <dependency>
+	  <groupId>com.codahale.metrics</groupId>
+	  <artifactId>metrics-annotation</artifactId>
+    </dependency>
     
     <!-- Test scope dependencies -->
     <dependency>

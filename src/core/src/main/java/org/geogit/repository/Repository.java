@@ -5,6 +5,9 @@
 package org.geogit.repository;
 
 import java.util.Map;
+import java.util.Set;
+
+import javax.annotation.Nullable;
 
 import org.geogit.api.AbstractGeoGitOp;
 import org.geogit.api.CommandLocator;
@@ -30,6 +33,8 @@ import org.geogit.storage.ObjectInserter;
 import org.geogit.storage.RefDatabase;
 
 import com.google.common.base.Optional;
+import com.google.common.util.concurrent.Service;
+import com.google.common.util.concurrent.ServiceManager;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 
@@ -69,17 +74,44 @@ public class Repository implements CommandLocator {
 
     public static final String DEPTH_CONFIG_KEY = "core.depth";
 
+    @Nullable
+    private ServiceManager managedServices;
+
     /**
      * Creates the repository.
      */
-    public Repository() {
+    @Inject
+    Repository(@Nullable final Set<Service> managedServices) {
+        if (managedServices != null && !managedServices.isEmpty()) {
+            this.managedServices = new ServiceManager(managedServices);
+        } else {
+            this.managedServices = null;
+        }
     }
 
-    public void open() {
+    public synchronized void open() {
         refDatabase.create();
         objectDatabase.open();
         graphDatabase.open();
         index.getDatabase().open();
+        if (managedServices != null && !managedServices.isHealthy()) {
+            managedServices.startAsync();
+            managedServices.awaitHealthy();
+        }
+    }
+
+    /**
+     * Closes the repository.
+     */
+    public synchronized void close() {
+        if (managedServices != null && managedServices.isHealthy()) {
+            managedServices.stopAsync();
+            managedServices.awaitStopped();
+        }
+        refDatabase.close();
+        objectDatabase.close();
+        graphDatabase.close();
+        index.getDatabase().close();
     }
 
     /**
@@ -117,16 +149,6 @@ public class Repository implements CommandLocator {
     @Override
     public StagingArea getIndex() {
         return index;
-    }
-
-    /**
-     * Closes the repository.
-     */
-    public void close() {
-        refDatabase.close();
-        objectDatabase.close();
-        graphDatabase.close();
-        index.getDatabase().close();
     }
 
     /**

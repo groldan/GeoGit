@@ -13,7 +13,6 @@ import org.geogit.storage.bdbje.JEStorageModule;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.Module;
 import com.google.inject.util.Modules;
 
 public class CLIRemoteTestInjectorBuilder extends InjectorBuilder {
@@ -38,15 +37,4 @@ public class CLIRemoteTestInjectorBuilder extends InjectorBuilder {
                 functionalTestModule));
     }
 
-    @Override
-    public Injector buildWithOverrides(Module... overrides) {
-        TestPlatform testPlatform = new TestPlatform(workingDirectory, homeDirectory);
-        JEStorageModule jeStorageModule = new JEStorageModule();
-        RemoteFunctionalTestModule functionalTestModule = new RemoteFunctionalTestModule(
-                testPlatform);
-
-        return Guice.createInjector(Modules.override(
-                Modules.override(new GeogitModule()).with(jeStorageModule, functionalTestModule))
-                .with(overrides));
-    }
 }

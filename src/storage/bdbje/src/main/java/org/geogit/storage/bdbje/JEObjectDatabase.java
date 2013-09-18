@@ -34,6 +34,7 @@ import org.geogit.storage.ObjectSerializingFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Iterators;
@@ -54,7 +55,7 @@ import com.sleepycat.je.Transaction;
 import com.sleepycat.je.TransactionConfig;
 
 /**
- * @TODO: extract interface
+ * 
  */
 public class JEObjectDatabase extends AbstractObjectDatabase implements ObjectDatabase {
 
@@ -171,6 +172,24 @@ public class JEObjectDatabase extends AbstractObjectDatabase implements ObjectDa
         this.objectDb = database;
         LOGGER.debug("Object database opened at {}. Transactional: {}", environment.getHome(),
                 transactional);
+    }
+
+    @Timed
+    @Override
+    public <T extends RevObject> boolean put(final T object) {
+        return super.put(object);
+    }
+
+    @Timed(name = "get")
+    @Override
+    public RevObject get(ObjectId id) throws IllegalArgumentException {
+        return super.get(id);
+    }
+
+    @Timed(name = "get")
+    @Override
+    public <T extends RevObject> T get(ObjectId id, Class<T> type) throws IllegalArgumentException {
+        return super.get(id, type);
     }
 
     @Override

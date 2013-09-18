@@ -17,6 +17,9 @@ import org.geogit.api.RevObject;
 import org.geogit.api.RevTag;
 import org.geogit.api.RevTree;
 
+import com.codahale.metrics.annotation.Metered;
+import com.codahale.metrics.annotation.Timed;
+
 /**
  * Provides an interface for implementations of GeoGit object databases.
  */
@@ -26,6 +29,7 @@ public interface ObjectDatabase {
      * Initializes/opens the databse. It's safe to call this method multiple times, and only the
      * first call shall take effect.
      */
+    @Timed(name = "open")
     public void open();
 
     /**
@@ -36,6 +40,7 @@ public interface ObjectDatabase {
     /**
      * Closes the database.
      */
+    @Timed(name = "close")
     public void close();
 
     /**
