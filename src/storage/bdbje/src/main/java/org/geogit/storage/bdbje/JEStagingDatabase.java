@@ -31,6 +31,7 @@ import org.geogit.storage.ObjectInserter;
 import org.geogit.storage.ObjectSerializingFactory;
 import org.geogit.storage.StagingDatabase;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Charsets;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -211,11 +212,13 @@ public class JEStagingDatabase implements ObjectDatabase, StagingDatabase {
         return stagingDb.delete(objectId);
     }
 
+    @Timed
     @Override
     public boolean put(RevObject object) {
         return stagingDb.put(object);
     }
 
+    @Timed
     @Override
     public void putAll(Iterator<? extends RevObject> objects) {
         stagingDb.putAll(objects);

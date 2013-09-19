@@ -12,6 +12,7 @@ import org.geogit.api.AbstractGeoGitOp;
 import org.geogit.api.GeogitTransaction;
 import org.geogit.repository.Repository;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.inject.Inject;
@@ -41,6 +42,7 @@ public class TransactionBegin extends AbstractGeoGitOp<GeogitTransaction> {
      * 
      * @return the {@link GeogitTransaction} that was created by the operation
      */
+    @Timed
     @Override
     public GeogitTransaction call() {
         Preconditions.checkState(!(commandLocator instanceof GeogitTransaction),

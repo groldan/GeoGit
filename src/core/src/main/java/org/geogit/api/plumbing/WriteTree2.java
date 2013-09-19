@@ -37,7 +37,6 @@ import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
-import com.google.common.base.Stopwatch;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.Iterators;
@@ -129,8 +128,6 @@ public class WriteTree2 extends AbstractGeoGitOp<ObjectId> {
     @Timed
     @Override
     public ObjectId call() {
-        Stopwatch sw = new Stopwatch().start();
-
         final ProgressListener progress = getProgressListener();
 
         TreeDifference treeDifference = computeTreeDifference();
@@ -162,8 +159,6 @@ public class WriteTree2 extends AbstractGeoGitOp<ObjectId> {
 
         ObjectId newRootId = newRoot.getId();
 
-        sw.stop();
-        LOGGER.debug("WriteTree2 took {}", sw);
         return newRootId;
     }
 

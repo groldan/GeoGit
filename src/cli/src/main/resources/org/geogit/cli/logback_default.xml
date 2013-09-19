@@ -10,14 +10,43 @@
     </encoder>
   </appender>
 
-  <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-    <!-- 
-         geogitdir is a variable set on the logging context by the cli application
-         by calling the resolve-geogit-dir plumbing command 
-    -->
+  <!-- geogitdir is a variable set on the logging context by the cli application by calling the resolve-geogit-dir plumbing 
+    command -->
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+
     <file>${geogitdir}/log/geogit.log</file>
+
+    <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+      <fileNamePattern>geogit.log.%i</fileNamePattern>
+      <minIndex>1</minIndex>
+      <maxIndex>9</maxIndex>
+    </rollingPolicy>
+
+    <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+      <maxFileSize>2MB</maxFileSize>
+    </triggeringPolicy>
+
     <encoder>
       <pattern>%date %level [%thread] %logger{10} [%file:%line] %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="METRICS" class="ch.qos.logback.core.rolling.RollingFileAppender">
+
+    <file>${geogitdir}/log/metrics.log</file>
+
+    <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+      <fileNamePattern>metrics.log.%i</fileNamePattern>
+      <minIndex>1</minIndex>
+      <maxIndex>9</maxIndex>
+    </rollingPolicy>
+
+    <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+      <maxFileSize>2MB</maxFileSize>
+    </triggeringPolicy>
+
+    <encoder>
+      <pattern>%d %-8r %m%n</pattern>
     </encoder>
   </appender>
 
@@ -28,10 +57,14 @@
   <logger name="org.geogit.storage" level="INFO" />
   <logger name="org.geogit.remote" level="INFO" />
   <logger name="org.geotools" level="WARN" />
-  
 
   <root level="WARN">
     <appender-ref ref="FILE" />
   </root>
+
+  <logger name="org.geogit.metrics.Metrics" additivity="false">
+    <level value="INFO" />
+    <appender-ref ref="METRICS" />
+  </logger>
 
 </configuration>

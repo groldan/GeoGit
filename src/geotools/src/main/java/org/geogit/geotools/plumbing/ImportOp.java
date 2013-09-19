@@ -33,6 +33,7 @@ import org.opengis.feature.type.PropertyDescriptor;
 import org.opengis.filter.identity.FeatureId;
 import org.opengis.util.ProgressListener;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.AbstractIterator;
@@ -87,6 +88,7 @@ public class ImportOp extends AbstractGeoGitOp<RevTree> {
      * @return RevTree the new working tree
      */
     @SuppressWarnings("deprecation")
+    @Timed
     @Override
     public RevTree call() {
         if (dataStore == null) {

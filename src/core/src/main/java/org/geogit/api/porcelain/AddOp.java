@@ -24,6 +24,7 @@ import org.geogit.repository.StagingArea;
 import org.geogit.repository.WorkingTree;
 import org.opengis.util.ProgressListener;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
@@ -56,6 +57,8 @@ public class AddOp extends AbstractGeoGitOp<WorkingTree> {
      * 
      * @return the modified {@link WorkingTree working tree}.
      */
+    @Timed
+    @Override
     public WorkingTree call() {
         // this is add all, TODO: implement partial adds
         String path = null;

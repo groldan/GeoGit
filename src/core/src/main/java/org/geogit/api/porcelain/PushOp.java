@@ -20,6 +20,7 @@ import org.geogit.remote.RemoteUtils;
 import org.geogit.repository.Repository;
 import org.geogit.storage.DeduplicationService;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -101,6 +102,8 @@ public class PushOp extends AbstractGeoGitOp<Void> {
      * @return {@code null}
      * @see org.geogit.api.AbstractGeoGitOp#call()
      */
+    @Timed
+    @Override
     public Void call() {
         if (remote == null) {
             setRemote("origin");

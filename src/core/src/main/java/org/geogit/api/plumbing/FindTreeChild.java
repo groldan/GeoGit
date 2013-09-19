@@ -17,6 +17,7 @@ import org.geogit.repository.DepthSearch;
 import org.geogit.storage.ObjectDatabase;
 import org.geogit.storage.StagingDatabase;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
@@ -114,6 +115,7 @@ public class FindTreeChild extends AbstractGeoGitOp<Optional<NodeRef>> {
      * @return an {@code Optional} that contains the Node if it was found, or
      *         {@link Optional#absent()} if it wasn't
      */
+    @Timed
     @Override
     public Optional<NodeRef> call() {
         checkNotNull(childPath, "childPath");

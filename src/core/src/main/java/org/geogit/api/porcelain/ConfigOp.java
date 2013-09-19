@@ -12,6 +12,7 @@ import org.geogit.api.porcelain.ConfigException.StatusCode;
 import org.geogit.di.CanRunDuringConflict;
 import org.geogit.storage.ConfigDatabase;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
 
@@ -72,6 +73,7 @@ public class ConfigOp extends AbstractGeoGitOp<Optional<Map<String, String>>> {
      * @throws ConfigException if an error is encountered. More specific information can be found in
      *         the exception's statusCode.
      */
+    @Timed
     @Override
     public Optional<Map<String, String>> call() {
         switch (action) {

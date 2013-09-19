@@ -18,6 +18,7 @@ import org.geogit.api.porcelain.MergeOp;
 import org.geogit.api.porcelain.NothingToCommitException;
 import org.geogit.api.porcelain.RebaseOp;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Suppliers;
@@ -88,6 +89,7 @@ public class TransactionEnd extends AbstractGeoGitOp<Boolean> {
      * 
      * @return Boolean - true if the transaction was successfully closed
      */
+    @Timed
     @Override
     public Boolean call() {
         Preconditions.checkState(!(commandLocator instanceof GeogitTransaction),

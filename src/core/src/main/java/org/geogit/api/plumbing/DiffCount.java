@@ -22,6 +22,7 @@ import org.geogit.api.plumbing.diff.DiffObjectCount;
 import org.geogit.api.plumbing.diff.DiffTreeWalk;
 import org.geogit.storage.StagingDatabase;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
@@ -82,6 +83,7 @@ public class DiffCount extends AbstractGeoGitOp<DiffObjectCount> {
         return this;
     }
 
+    @Timed
     @Override
     public DiffObjectCount call() {
         checkState(oldRefSpec != null, "old ref spec not provided");

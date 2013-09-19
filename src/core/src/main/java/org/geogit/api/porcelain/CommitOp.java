@@ -35,6 +35,7 @@ import org.geogit.api.plumbing.merge.ReadMergeCommitMessageOp;
 import org.geogit.di.CanRunDuringConflict;
 import org.geogit.storage.ObjectDatabase;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
@@ -247,6 +248,8 @@ public class CommitOp extends AbstractGeoGitOp<RevCommit> {
      * @throws NothingToCommitException if there are no staged changes by comparing the index
      *         staging tree and the repository HEAD tree.
      */
+    @Timed
+    @Override
     public RevCommit call() throws RuntimeException {
         final String committer = resolveCommitter();
         final String committerEmail = resolveCommitterEmail();

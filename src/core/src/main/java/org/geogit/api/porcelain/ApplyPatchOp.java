@@ -35,6 +35,7 @@ import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.feature.type.Name;
 import org.opengis.feature.type.PropertyDescriptor;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -125,6 +126,8 @@ public class ApplyPatchOp extends AbstractGeoGitOp<Patch> {
      * 
      * @return the modified {@link WorkingTree working tree}.
      */
+    @Timed
+    @Override
     public Patch call() throws RuntimeException {
         Preconditions.checkArgument(patch != null, "No patch file provided");
 

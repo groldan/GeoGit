@@ -22,6 +22,7 @@ import org.geogit.repository.SpatialOps;
 import org.geogit.storage.ObjectDatabase;
 import org.geogit.storage.StagingDatabase;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
@@ -153,6 +154,7 @@ public class WriteBack extends AbstractGeoGitOp<ObjectId> {
      * 
      * @return the {@link ObjectId id} of the resulting new ancestor tree.
      */
+    @Timed
     @Override
     public ObjectId call() {
         checkNotNull(tree, "child tree not set");

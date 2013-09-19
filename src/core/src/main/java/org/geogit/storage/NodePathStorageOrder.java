@@ -8,8 +8,8 @@ package org.geogit.storage;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.WeakHashMap;
 
 import org.geogit.api.Node;
 import org.geogit.api.ObjectId;
@@ -41,7 +41,16 @@ public final class NodePathStorageOrder extends Ordering<String> {
     }
 
     // private Cache<String, ObjectId> cache = CacheBuilder.newBuilder().maximumSize(1000).build();
-    private Map<String, ObjectId> cache = new WeakHashMap<String, ObjectId>();
+    // private Map<String, ObjectId> cache = new WeakHashMap<String, ObjectId>();
+    private Map<String, ObjectId> cache = new LinkedHashMap<String, ObjectId>() {
+
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, ObjectId> eldest) {
+            return size() == 10000;
+        }
+    };
 
     public ObjectId pathHash(final String path) {
         ObjectId pathHash = cache.get(path);// .getIfPresent(path);

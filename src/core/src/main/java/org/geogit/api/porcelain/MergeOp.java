@@ -34,6 +34,7 @@ import org.geogit.repository.Repository;
 import org.geotools.util.SubProgressListener;
 import org.opengis.util.ProgressListener;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
@@ -143,6 +144,7 @@ public class MergeOp extends AbstractGeoGitOp<MergeOp.MergeReport> {
      * 
      * @return always {@code true}
      */
+    @Timed
     @Override
     public MergeReport call() throws RuntimeException {
 

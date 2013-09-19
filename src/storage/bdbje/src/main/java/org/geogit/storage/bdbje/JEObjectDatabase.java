@@ -174,19 +174,19 @@ public class JEObjectDatabase extends AbstractObjectDatabase implements ObjectDa
                 transactional);
     }
 
-    @Timed
+    @Timed(name = "ObjectDatabase.put", absolute = true)
     @Override
     public <T extends RevObject> boolean put(final T object) {
         return super.put(object);
     }
 
-    @Timed(name = "get")
+    @Timed(name = "ObjectDatabase.get", absolute = true)
     @Override
     public RevObject get(ObjectId id) throws IllegalArgumentException {
         return super.get(id);
     }
 
-    @Timed(name = "get")
+    @Timed(name = "ObjectDatabase.get", absolute = true)
     @Override
     public <T extends RevObject> T get(ObjectId id, Class<T> type) throws IllegalArgumentException {
         return super.get(id, type);
@@ -281,6 +281,7 @@ public class JEObjectDatabase extends AbstractObjectDatabase implements ObjectDa
         }
     };
 
+    @Timed(name = "ObjectDatabase.putAll", absolute = true)
     @Override
     public void putAll(final Iterator<? extends RevObject> objects) {
         if (!objects.hasNext()) {
@@ -415,6 +416,7 @@ public class JEObjectDatabase extends AbstractObjectDatabase implements ObjectDa
         return status;
     }
 
+    @Timed(name = "ObjectDatabase.delete", absolute = true)
     @Override
     public boolean delete(final ObjectId id) {
         final byte[] rawKey = id.getRawValue();
@@ -426,6 +428,7 @@ public class JEObjectDatabase extends AbstractObjectDatabase implements ObjectDa
         return SUCCESS.equals(status);
     }
 
+    @Timed(name = "ObjectDatabase.deleteAll", absolute = true)
     @Override
     public long deleteAll(Iterator<ObjectId> ids) {
         long count = 0;

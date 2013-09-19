@@ -21,6 +21,7 @@ import org.geogit.api.plumbing.diff.DiffTreeWalk;
 import org.geogit.storage.ObjectDatabase;
 import org.geogit.storage.StagingDatabase;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
@@ -129,6 +130,7 @@ public class DiffTree extends AbstractGeoGitOp<Iterator<DiffEntry>> implements
      * @return an iterator to a set of differences between the two trees
      * @see DiffEntry
      */
+    @Timed
     @Override
     public Iterator<DiffEntry> call() throws IllegalArgumentException {
         checkNotNull(oldRefSpec, "old version not specified");

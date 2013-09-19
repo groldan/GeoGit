@@ -18,6 +18,8 @@ import org.geogit.api.plumbing.DiffWorkTree;
 import org.geogit.api.plumbing.diff.DiffEntry;
 import org.geogit.di.CanRunDuringConflict;
 
+import com.codahale.metrics.annotation.Timed;
+
 /**
  * Perform a diff between trees pointed out by two commits
  * <p>
@@ -114,6 +116,7 @@ public class DiffOp extends AbstractGeoGitOp<Iterator<DiffEntry>> {
      * @return an iterator to a set of differences between the two trees
      * @see DiffEntry
      */
+    @Timed
     @Override
     public Iterator<DiffEntry> call() {
         checkArgument(cached && oldRefSpec == null || !cached, String.format(

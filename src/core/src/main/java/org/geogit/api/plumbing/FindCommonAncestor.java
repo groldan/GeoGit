@@ -11,6 +11,7 @@ import org.geogit.api.RevCommit;
 import org.geogit.repository.Repository;
 import org.geogit.storage.GraphDatabase;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
@@ -61,6 +62,7 @@ public class FindCommonAncestor extends AbstractGeoGitOp<Optional<RevCommit>> {
      * @return an {@link Optional} of the ancestor commit, or {@link Optional#absent()} if no common
      *         ancestor was found
      */
+    @Timed
     @Override
     public Optional<RevCommit> call() {
         Preconditions.checkState(left != null, "Left commit has not been set.");

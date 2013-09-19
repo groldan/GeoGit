@@ -18,6 +18,7 @@ import org.geogit.api.plumbing.RefParse;
 import org.geogit.api.plumbing.UpdateRef;
 import org.geogit.api.porcelain.MergeOp.MergeReport;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
@@ -143,6 +144,8 @@ public class PullOp extends AbstractGeoGitOp<PullResult> {
      * @return {@code null}
      * @see org.geogit.api.AbstractGeoGitOp#call()
      */
+    @Timed
+    @Override
     public PullResult call() {
 
         if (remote == null) {

@@ -22,6 +22,7 @@ import org.geogit.api.RevTag;
 import org.geogit.api.RevTree;
 import org.geogit.storage.StagingDatabase;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
 
@@ -102,6 +103,7 @@ public class RevParse extends AbstractGeoGitOp<Optional<ObjectId>> {
      *         expected type.
      * @return the resolved object id, may be {@link Optional#absent() absent}
      */
+    @Timed
     @Override
     public Optional<ObjectId> call() {
         checkState(this.refSpec != null, "refSpec was not given");

@@ -45,6 +45,7 @@ import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.PropertyDescriptor;
 import org.opengis.util.ProgressListener;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
@@ -107,6 +108,7 @@ public class ExportOp extends AbstractGeoGitOp<SimpleFeatureStore> {
      * @return a FeatureCollection with the specified features
      */
     @SuppressWarnings("deprecation")
+    @Timed
     @Override
     public SimpleFeatureStore call() {
 

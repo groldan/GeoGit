@@ -37,6 +37,7 @@ import org.geogit.api.porcelain.ConfigOp.ConfigAction;
 import org.geogit.api.porcelain.ConfigOp.ConfigScope;
 import org.geogit.di.CanRunDuringConflict;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -104,6 +105,7 @@ public class CheckoutOp extends AbstractGeoGitOp<CheckoutResult> {
     /**
      * @return the id of the new work tree
      */
+    @Timed
     @Override
     public CheckoutResult call() {
         checkState(branchOrCommit != null || !paths.isEmpty(),

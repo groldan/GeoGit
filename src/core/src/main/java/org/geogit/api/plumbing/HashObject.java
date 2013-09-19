@@ -15,6 +15,7 @@ import org.geogit.api.AbstractGeoGitOp;
 import org.geogit.api.ObjectId;
 import org.geogit.api.RevObject;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Preconditions;
 import com.google.common.hash.Funnel;
 import com.google.common.hash.Hasher;
@@ -53,6 +54,7 @@ public class HashObject extends AbstractGeoGitOp<ObjectId> {
      * 
      * @return a new ObjectId created from the hash of the RevObject.
      */
+    @Timed
     @Override
     public ObjectId call() {
         Preconditions.checkState(object != null, "Object has not been set.");

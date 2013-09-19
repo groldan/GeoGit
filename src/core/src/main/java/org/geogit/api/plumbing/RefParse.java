@@ -15,6 +15,7 @@ import org.geogit.api.Ref;
 import org.geogit.api.RevObject.TYPE;
 import org.geogit.api.SymRef;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -65,6 +66,7 @@ public class RefParse extends AbstractGeoGitOp<Optional<Ref>> {
      * @throws IllegalArgumentException if {@code refSpec} resolves to more than one ref on the same
      *         namespace
      */
+    @Timed
     @Override
     public Optional<Ref> call() {
         Preconditions.checkState(refSpec != null, "name has not been set");

@@ -27,6 +27,7 @@ import org.geogit.repository.Repository;
 import org.geogit.storage.DeduplicationService;
 import org.opengis.util.ProgressListener;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
@@ -139,6 +140,8 @@ public class FetchOp extends AbstractGeoGitOp<FetchResult> {
      * @return {@code null}
      * @see org.geogit.api.AbstractGeoGitOp#call()
      */
+    @Timed
+    @Override
     public FetchResult call() {
         if (all) {
             // Add all remotes to list.

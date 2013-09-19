@@ -24,6 +24,7 @@ import org.geogit.repository.Repository;
 import org.geogit.storage.GraphDatabase;
 import org.geotools.util.Range;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -235,6 +236,7 @@ public class LogOp extends AbstractGeoGitOp<Iterator<RevCommit>> {
      * @return the list of commits that satisfy the query criteria, most recent first.
      * @see org.geogit.api.AbstractGeoGitOp#call()
      */
+    @Timed
     @Override
     public Iterator<RevCommit> call() {
 

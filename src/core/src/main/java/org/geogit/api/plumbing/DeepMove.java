@@ -22,6 +22,7 @@ import org.geogit.repository.StagingArea;
 import org.geogit.storage.ObjectDatabase;
 import org.geogit.storage.StagingDatabase;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.base.Supplier;
@@ -110,6 +111,7 @@ public class DeepMove extends AbstractGeoGitOp<ObjectId> {
      * @return the {@link ObjectId} of the moved object, or {@code null} if {@link #setObjects} was
      *         used and hence no such information it available
      */
+    @Timed
     @Override
     public ObjectId call() {
         ObjectDatabase from = toIndex ? odb : index;
