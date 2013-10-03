@@ -70,6 +70,7 @@ public class MetricsConsoleReportService extends AbstractIdleService {
         try {
             PrintStream printStream = new PrintStream(fout, true, "UTF-8");
             reportTo(printStream);
+            printStream.flush();
         } finally {
             fout.close();
         }
@@ -82,6 +83,6 @@ public class MetricsConsoleReportService extends AbstractIdleService {
                 .filter(FILTER_UNUSED)//
                 .formattedFor(Locale.ENGLISH)//
                 .outputTo(output)//
-                .build();
+                .build().report();
     }
 }

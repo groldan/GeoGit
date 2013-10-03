@@ -43,21 +43,22 @@ public class MetricsLoggingService extends AbstractIdleService {
 
     private static final class LoggingFilter implements MetricFilter {
 
-        private Map<Counting, Long> previousCounts = Maps.newIdentityHashMap();
+        //private Map<Counting, Long> previousCounts = Maps.newIdentityHashMap();
 
         @Override
         public boolean matches(String name, Metric metric) {
             if (metric instanceof Counting) {// Meter, Timer, Counter, Histogram
                 // Filter out counters that haven't changed since the last run
                 final Counting counter = (Counting) metric;
-                final long oldCount = Optional.fromNullable(previousCounts.get(counter))
-                        .or(Long.valueOf(0)).longValue();
-                final long newCount = counter.getCount();
-                if (newCount > oldCount) {
-                    previousCounts.put(counter, newCount);
-                } else {
-                    return false;
-                }
+                return counter.getCount() > 0L;
+//                final long oldCount = Optional.fromNullable(previousCounts.get(counter))
+//                        .or(Long.valueOf(0)).longValue();
+//                final long newCount = counter.getCount();
+//                if (newCount > oldCount) {
+//                    previousCounts.put(counter, newCount);
+//                } else {
+//                    return false;
+//                }
             }
             return true;
         }
@@ -116,7 +117,7 @@ public class MetricsLoggingService extends AbstractIdleService {
             csvReporter = null;
         }
         if (loggingFilter != null) {
-            loggingFilter.previousCounts.clear();
+            //loggingFilter.previousCounts.clear();
             loggingFilter = null;
         }
     }
