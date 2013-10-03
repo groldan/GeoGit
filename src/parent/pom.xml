@@ -313,6 +313,11 @@
         <version>${metrics.version}</version>
       </dependency>
       <dependency>
+        <groupId>com.codahale.metrics</groupId>
+        <artifactId>metrics-jvm</artifactId>
+        <version>${metrics.version}</version>
+      </dependency>
+      <dependency>
         <groupId>com.microsoft</groupId>
         <artifactId>sqljdbc4</artifactId>
         <version>${sqljdbc4.version}</version>

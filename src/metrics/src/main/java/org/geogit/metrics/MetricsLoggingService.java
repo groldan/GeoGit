@@ -43,22 +43,25 @@ public class MetricsLoggingService extends AbstractIdleService {
 
     private static final class LoggingFilter implements MetricFilter {
 
-        //private Map<Counting, Long> previousCounts = Maps.newIdentityHashMap();
+        private Map<String, Long> previousCounts = Maps.newIdentityHashMap();
+
+        boolean allowAll;
 
         @Override
-        public boolean matches(String name, Metric metric) {
+        public boolean matches(final String name, final Metric metric) {
             if (metric instanceof Counting) {// Meter, Timer, Counter, Histogram
                 // Filter out counters that haven't changed since the last run
                 final Counting counter = (Counting) metric;
-                return counter.getCount() > 0L;
-//                final long oldCount = Optional.fromNullable(previousCounts.get(counter))
-//                        .or(Long.valueOf(0)).longValue();
-//                final long newCount = counter.getCount();
-//                if (newCount > oldCount) {
-//                    previousCounts.put(counter, newCount);
-//                } else {
-//                    return false;
-//                }
+                if (allowAll) {
+                    return counter.getCount() > 0L;
+                }
+                final long oldCount = Optional.fromNullable(previousCounts.get(name))
+                        .or(Long.valueOf(0)).longValue();
+                final long newCount = counter.getCount();
+                if (newCount == oldCount) {
+                    return false;
+                }
+                previousCounts.put(name, newCount);
             }
             return true;
         }
@@ -106,6 +109,9 @@ public class MetricsLoggingService extends AbstractIdleService {
 
     @Override
     protected void shutDown() throws Exception {
+        if (loggingFilter != null) {
+            loggingFilter.allowAll = true;
+        }
         if (loggingReporter != null) {
             loggingReporter.report();
             loggingReporter.stop();
@@ -117,7 +123,7 @@ public class MetricsLoggingService extends AbstractIdleService {
             csvReporter = null;
         }
         if (loggingFilter != null) {
-            //loggingFilter.previousCounts.clear();
+            // loggingFilter.previousCounts.clear();
             loggingFilter = null;
         }
     }

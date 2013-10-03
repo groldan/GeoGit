@@ -15,5 +15,6 @@ public class MetricsLoggingServiceModule extends AbstractModule {
     protected void configure() {
         Multibinder<Service> services = Multibinder.newSetBinder(binder(), Service.class);
         services.addBinding().to(MetricsLoggingService.class).in(Scopes.SINGLETON);
+        services.addBinding().to(JVMMetricsLoggingService.class).in(Scopes.SINGLETON);
     }
 }
