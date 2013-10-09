@@ -155,7 +155,7 @@ public abstract class RepositoryTestCase extends Assert {
 
     protected final void doSetUp() throws IOException, SchemaException, ParseException, Exception {
         envHome = repositoryTempFolder.getRoot();
-
+        System.out.println("envHome is " + envHome);
         injector = createInjector();
 
         geogit = new GeoGIT(injector, envHome);
