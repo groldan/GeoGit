@@ -144,7 +144,7 @@ public class MergeOp extends AbstractGeoGitOp<MergeOp.MergeReport> {
      * 
      * @return always {@code true}
      */
-    @Timed
+    @Timed(name = "MergeOp", absolute = true)
     @Override
     public MergeReport call() throws RuntimeException {
 

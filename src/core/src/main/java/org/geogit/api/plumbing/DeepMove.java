@@ -111,7 +111,7 @@ public class DeepMove extends AbstractGeoGitOp<ObjectId> {
      * @return the {@link ObjectId} of the moved object, or {@code null} if {@link #setObjects} was
      *         used and hence no such information it available
      */
-    @Timed
+    @Timed(name = "DeepMove", absolute = true)
     @Override
     public ObjectId call() {
         ObjectDatabase from = toIndex ? odb : index;

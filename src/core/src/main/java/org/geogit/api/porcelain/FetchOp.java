@@ -140,7 +140,7 @@ public class FetchOp extends AbstractGeoGitOp<FetchResult> {
      * @return {@code null}
      * @see org.geogit.api.AbstractGeoGitOp#call()
      */
-    @Timed
+    @Timed(name = "FetchOp", absolute = true)
     @Override
     public FetchResult call() {
         if (all) {

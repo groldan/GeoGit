@@ -130,7 +130,7 @@ public class DiffTree extends AbstractGeoGitOp<Iterator<DiffEntry>> implements
      * @return an iterator to a set of differences between the two trees
      * @see DiffEntry
      */
-    @Timed
+    @Timed(name = "DiffTree", absolute = true)
     @Override
     public Iterator<DiffEntry> call() throws IllegalArgumentException {
         checkNotNull(oldRefSpec, "old version not specified");

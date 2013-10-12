@@ -116,7 +116,7 @@ public class DiffOp extends AbstractGeoGitOp<Iterator<DiffEntry>> {
      * @return an iterator to a set of differences between the two trees
      * @see DiffEntry
      */
-    @Timed
+    @Timed(name = "DiffOp", absolute = true)
     @Override
     public Iterator<DiffEntry> call() {
         checkArgument(cached && oldRefSpec == null || !cached, String.format(

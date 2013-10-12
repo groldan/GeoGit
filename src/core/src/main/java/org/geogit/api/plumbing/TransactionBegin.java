@@ -42,7 +42,7 @@ public class TransactionBegin extends AbstractGeoGitOp<GeogitTransaction> {
      * 
      * @return the {@link GeogitTransaction} that was created by the operation
      */
-    @Timed
+    @Timed(name = "TransactionBegin", absolute = true)
     @Override
     public GeogitTransaction call() {
         Preconditions.checkState(!(commandLocator instanceof GeogitTransaction),

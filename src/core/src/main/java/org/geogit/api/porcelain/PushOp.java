@@ -102,7 +102,7 @@ public class PushOp extends AbstractGeoGitOp<Void> {
      * @return {@code null}
      * @see org.geogit.api.AbstractGeoGitOp#call()
      */
-    @Timed
+    @Timed(name = "PushOp", absolute = true)
     @Override
     public Void call() {
         if (remote == null) {

@@ -88,7 +88,7 @@ public class ImportOp extends AbstractGeoGitOp<RevTree> {
      * @return RevTree the new working tree
      */
     @SuppressWarnings("deprecation")
-    @Timed
+    @Timed(name = "ImportOp", absolute = true)
     @Override
     public RevTree call() {
         if (dataStore == null) {

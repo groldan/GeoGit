@@ -66,7 +66,7 @@ public class RefParse extends AbstractGeoGitOp<Optional<Ref>> {
      * @throws IllegalArgumentException if {@code refSpec} resolves to more than one ref on the same
      *         namespace
      */
-    @Timed
+    @Timed(name = "RefParse", absolute = true)
     @Override
     public Optional<Ref> call() {
         Preconditions.checkState(refSpec != null, "name has not been set");

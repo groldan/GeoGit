@@ -57,7 +57,7 @@ public class AddOp extends AbstractGeoGitOp<WorkingTree> {
      * 
      * @return the modified {@link WorkingTree working tree}.
      */
-    @Timed
+    @Timed(name = "AddOp", absolute = true)
     @Override
     public WorkingTree call() {
         // this is add all, TODO: implement partial adds

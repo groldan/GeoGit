@@ -17,7 +17,6 @@ import org.geogit.api.RevObject;
 import org.geogit.api.RevTag;
 import org.geogit.api.RevTree;
 
-import com.codahale.metrics.annotation.Metered;
 import com.codahale.metrics.annotation.Timed;
 
 /**
@@ -29,7 +28,7 @@ public interface ObjectDatabase {
      * Initializes/opens the databse. It's safe to call this method multiple times, and only the
      * first call shall take effect.
      */
-    @Timed(name = "open")
+    @Timed(name = "ObjectDatabase.open", absolute = true)
     public void open();
 
     /**
@@ -40,7 +39,7 @@ public interface ObjectDatabase {
     /**
      * Closes the database.
      */
-    @Timed(name = "close")
+    @Timed(name = "ObjectDatabase.close", absolute = true)
     public void close();
 
     /**
@@ -49,6 +48,7 @@ public interface ObjectDatabase {
      * @param id the id to search for
      * @return true if the object exists, false otherwise
      */
+    @Timed(name = "ObjectDatabase.exists", absolute = true)
     public boolean exists(final ObjectId id);
 
     /**
@@ -64,6 +64,7 @@ public interface ObjectDatabase {
      * 
      * @throws IllegalArgumentException if no blob exists for the given {@code id}
      */
+    @Timed(name = "ObjectDatabase.get", absolute = true)
     public RevObject get(ObjectId id) throws IllegalArgumentException;
 
     /**
@@ -125,6 +126,7 @@ public interface ObjectDatabase {
      * @param object the object to insert, key'ed by its {@link RevObject#getId() id}
      * @return true if the object was inserted, false otherwise
      */
+    @Timed(name = "ObjectDatabase.put", absolute = true)
     public <T extends RevObject> boolean put(final T object);
 
     /**
@@ -138,13 +140,16 @@ public interface ObjectDatabase {
      * @param objectId the id of the object to delete
      * @return true if the object was deleted, false if it was not found
      */
+    @Timed(name = "ObjectDatabase.delete", absolute = true)
     public boolean delete(ObjectId objectId);
 
     /**
      * @param iterator
      */
+    @Timed(name = "ObjectDatabase.putAll", absolute = true)
     public void putAll(Iterator<? extends RevObject> objects);
 
+    @Timed(name = "ObjectDatabase.deleteAll", absolute = true)
     public long deleteAll(Iterator<ObjectId> ids);
 
 }

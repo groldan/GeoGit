@@ -105,7 +105,7 @@ public class CheckoutOp extends AbstractGeoGitOp<CheckoutResult> {
     /**
      * @return the id of the new work tree
      */
-    @Timed
+    @Timed(name = "CheckoutOp", absolute = true)
     @Override
     public CheckoutResult call() {
         checkState(branchOrCommit != null || !paths.isEmpty(),

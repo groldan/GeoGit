@@ -110,7 +110,6 @@ public class WorkingTree {
      * @return the tree represented by WORK_HEAD. If there is no tree set at WORK_HEAD, it will
      *         return the HEAD tree (no unstaged changes).
      */
-    @Timed
     public RevTree getTree() {
         Optional<ObjectId> workTreeId = commandLocator.command(ResolveTreeish.class)
                 .setTreeish(Ref.WORK_HEAD).call();
@@ -156,7 +155,7 @@ public class WorkingTree {
      * @param featureId the id of the feature
      * @return true if the object was found and deleted, false otherwise
      */
-    @Timed
+    @Timed(name = "WorkingTree.deleteFeatureId", absolute = true)
     public boolean delete(final String path, final String featureId) {
         Optional<NodeRef> typeTreeRef = commandLocator.command(FindTreeChild.class).setIndex(true)
                 .setParent(getTree()).setChildPath(path).call();
@@ -192,7 +191,7 @@ public class WorkingTree {
      * @param path the path to the tree to delete
      * @throws Exception
      */
-    @Timed
+    @Timed(name = "WorkingTree.deletePath", absolute = true)
     public void delete(final String path) {
 
         final String parentPath = NodeRef.parentPath(path);
@@ -244,7 +243,7 @@ public class WorkingTree {
      * @param affectedFeatures features to remove
      * @throws Exception
      */
-    @Timed
+    @Timed(name = "WorkingTree.deleteIterator", absolute = true)
     public void delete(final Name typeName, final Filter filter,
             final Iterator<Feature> affectedFeatures) throws Exception {
 
@@ -286,7 +285,7 @@ public class WorkingTree {
      * @param typeName feature type to remove
      * @throws Exception
      */
-    @Timed
+    @Timed(name = "WorkingTree.deleteName", absolute = true)
     public void delete(final Name typeName) throws Exception {
         checkNotNull(typeName);
 
@@ -305,7 +304,7 @@ public class WorkingTree {
      * 
      * @param features the features to delete
      */
-    @Timed
+    @Timed(name = "WorkingTree.delete", absolute = true)
     public void delete(Iterator<String> features) {
         Map<String, RevTreeBuilder> parents = Maps.newHashMap();
 
@@ -430,7 +429,7 @@ public class WorkingTree {
      * @param collectionSize number of features to add
      * @throws Exception
      */
-    @Timed
+    @Timed(name = "WorkingTree.insert", absolute = true)
     public void insert(final String treePath, Iterator<? extends Feature> features,
             final ProgressListener listener, @Nullable final List<Node> insertedTarget,
             @Nullable final Integer collectionSize) {
@@ -711,7 +710,7 @@ public class WorkingTree {
      * @return a list of all the feature type names in the working tree
      * @see FindFeatureTypeTrees
      */
-    @Timed
+    @Timed(name = "WorkingTree.getFeatureTypeTrees", absolute = true)
     public List<NodeRef> getFeatureTypeTrees() {
 
         List<NodeRef> typeTrees = commandLocator.command(FindFeatureTypeTrees.class)

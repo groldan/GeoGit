@@ -115,7 +115,7 @@ public class FindTreeChild extends AbstractGeoGitOp<Optional<NodeRef>> {
      * @return an {@code Optional} that contains the Node if it was found, or
      *         {@link Optional#absent()} if it wasn't
      */
-    @Timed
+    @Timed(name = "FindTreeChild", absolute = true)
     @Override
     public Optional<NodeRef> call() {
         checkNotNull(childPath, "childPath");

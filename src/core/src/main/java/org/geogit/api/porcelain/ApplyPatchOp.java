@@ -126,7 +126,7 @@ public class ApplyPatchOp extends AbstractGeoGitOp<Patch> {
      * 
      * @return the modified {@link WorkingTree working tree}.
      */
-    @Timed
+    @Timed(name = "ApplyPatchOp", absolute = true)
     @Override
     public Patch call() throws RuntimeException {
         Preconditions.checkArgument(patch != null, "No patch file provided");

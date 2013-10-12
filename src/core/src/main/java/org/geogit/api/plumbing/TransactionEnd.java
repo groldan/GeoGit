@@ -89,7 +89,7 @@ public class TransactionEnd extends AbstractGeoGitOp<Boolean> {
      * 
      * @return Boolean - true if the transaction was successfully closed
      */
-    @Timed
+    @Timed(name = "TransactionEnd", absolute = true)
     @Override
     public Boolean call() {
         Preconditions.checkState(!(commandLocator instanceof GeogitTransaction),

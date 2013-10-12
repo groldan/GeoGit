@@ -91,7 +91,7 @@ public class CloneOp extends AbstractGeoGitOp<Void> {
      * @return {@code null}
      * @see org.geogit.api.AbstractGeoGitOp#call()
      */
-    @Timed
+    @Timed(name = "CloneOp", absolute = true)
     @Override
     public Void call() {
         Preconditions.checkArgument(repositoryURL != null && !repositoryURL.isEmpty(),

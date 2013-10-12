@@ -83,7 +83,7 @@ public class DiffCount extends AbstractGeoGitOp<DiffObjectCount> {
         return this;
     }
 
-    @Timed
+    @Timed(name = "DiffCount", absolute = true)
     @Override
     public DiffObjectCount call() {
         checkState(oldRefSpec != null, "old ref spec not provided");

@@ -73,7 +73,7 @@ public class ConfigOp extends AbstractGeoGitOp<Optional<Map<String, String>>> {
      * @throws ConfigException if an error is encountered. More specific information can be found in
      *         the exception's statusCode.
      */
-    @Timed
+    @Timed(name = "ConfigOp", absolute = true)
     @Override
     public Optional<Map<String, String>> call() {
         switch (action) {

@@ -62,7 +62,7 @@ public class FindCommonAncestor extends AbstractGeoGitOp<Optional<RevCommit>> {
      * @return an {@link Optional} of the ancestor commit, or {@link Optional#absent()} if no common
      *         ancestor was found
      */
-    @Timed
+    @Timed(name = "FindCommonAncestor", absolute = true)
     @Override
     public Optional<RevCommit> call() {
         Preconditions.checkState(left != null, "Left commit has not been set.");

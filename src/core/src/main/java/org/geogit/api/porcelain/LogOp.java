@@ -236,7 +236,7 @@ public class LogOp extends AbstractGeoGitOp<Iterator<RevCommit>> {
      * @return the list of commits that satisfy the query criteria, most recent first.
      * @see org.geogit.api.AbstractGeoGitOp#call()
      */
-    @Timed
+    @Timed(name = "LogOp", absolute = true)
     @Override
     public Iterator<RevCommit> call() {
 

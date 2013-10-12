@@ -125,7 +125,7 @@ public class WriteTree2 extends AbstractGeoGitOp<ObjectId> {
      *         the index and the HEAD, or {@code null} if the operation has been cancelled (as
      *         indicated by the {@link #getProgressListener() progress listener}.
      */
-    @Timed
+    @Timed(name = "WriteTree2", absolute = true)
     @Override
     public ObjectId call() {
         final ProgressListener progress = getProgressListener();
