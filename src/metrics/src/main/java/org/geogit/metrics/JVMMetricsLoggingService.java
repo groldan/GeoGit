@@ -11,6 +11,8 @@ import java.io.File;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import org.geogit.storage.ConfigDatabase;
+
 import com.codahale.metrics.CsvReporter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
@@ -33,15 +35,22 @@ public class JVMMetricsLoggingService extends AbstractIdleService {
 
     private MetricsLocationResolver locationResolver;
 
+    private ConfigDatabase configDb;
+
     @Inject
-    JVMMetricsLoggingService(MetricRegistry metricRegistry, MetricsLocationResolver locationResolver) {
+    JVMMetricsLoggingService(MetricRegistry metricRegistry,
+            MetricsLocationResolver locationResolver, ConfigDatabase configDb) {
         checkNotNull(metricRegistry, "MetricsRegistry");
         checkNotNull(locationResolver, "locationResolver");
         this.locationResolver = locationResolver;
+        this.configDb = configDb;
     }
 
     @Override
     protected void startUp() throws Exception {
+        if (!"true".equals(configDb.get("metrics.enabled").orNull())) {
+            return;
+        }
         final Optional<File> metricsDirectory = locationResolver.getMetricsDirectory();
         checkState(metricsDirectory.isPresent(), "Couldn't resolve location of metrics directory");
 

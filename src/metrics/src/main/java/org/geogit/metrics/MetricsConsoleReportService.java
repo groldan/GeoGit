@@ -13,6 +13,8 @@ import java.io.PrintStream;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import org.geogit.storage.ConfigDatabase;
+
 import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.Counting;
 import com.codahale.metrics.Metric;
@@ -43,9 +45,12 @@ public class MetricsConsoleReportService extends AbstractIdleService {
         }
     };
 
+    private ConfigDatabase configDb;
+
     @Inject
     MetricsConsoleReportService(MetricRegistry metricRegistry,
-            MetricsLocationResolver locationResolver) {
+            MetricsLocationResolver locationResolver, ConfigDatabase configDb) {
+        this.configDb = configDb;
         checkNotNull(metricRegistry, "MetricsRegistry");
         checkNotNull(locationResolver, "locationResolver");
         this.metricRegistry = metricRegistry;
@@ -54,6 +59,9 @@ public class MetricsConsoleReportService extends AbstractIdleService {
 
     @Override
     protected void startUp() throws Exception {
+        if (!"true".equals(configDb.get("metrics.enabled").orNull())) {
+            return;
+        }
         Optional<File> metricsDirectory = locationResolver.getMetricsDirectory();
         checkState(metricsDirectory.isPresent(),
                 "Metrics directory couldn't be determined, can't start service.");
@@ -61,6 +69,9 @@ public class MetricsConsoleReportService extends AbstractIdleService {
 
     @Override
     protected void shutDown() throws Exception {
+        if (!"true".equals(configDb.get("metrics.enabled").orNull())) {
+            return;
+        }
         final File metricsDir = locationResolver.getMetricsDirectory().orNull();
         if (metricsDir == null) {
             return;

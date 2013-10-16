@@ -18,17 +18,17 @@ class MetricsLocationResolver {
 
     private CommandLocator cmdLocator;
 
-    private File resolvedMetricsDirectory;
+    //private File resolvedMetricsDirectory;
 
     @Inject
     MetricsLocationResolver(CommandLocator cmdLocator) {
         this.cmdLocator = cmdLocator;
     }
 
-    public Optional<File> getMetricsDirectory() {
-        if (resolvedMetricsDirectory != null) {
-            return Optional.of(resolvedMetricsDirectory);
-        }
+    public synchronized Optional<File> getMetricsDirectory() {
+//        if (resolvedMetricsDirectory != null) {
+//            return Optional.of(resolvedMetricsDirectory);
+//        }
 
         final URL geogitDir = cmdLocator.command(ResolveGeogitDir.class).call();
         if (geogitDir == null) {
@@ -60,7 +60,7 @@ class MetricsLocationResolver {
             LOGGER.warn("Can't write to {}", metricsDirectory);
             return Optional.absent();
         }
-        resolvedMetricsDirectory = metricsDirectory;
+        //resolvedMetricsDirectory = metricsDirectory;
         return Optional.of(metricsDirectory);
     }
 }

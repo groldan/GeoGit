@@ -12,6 +12,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.geogit.storage.ConfigDatabase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +44,7 @@ public class MetricsLoggingService extends AbstractIdleService {
 
     private static final class LoggingFilter implements MetricFilter {
 
-        private Map<String, Long> previousCounts = Maps.newIdentityHashMap();
+        private Map<String, Long> previousCounts = Maps.newHashMap();
 
         boolean allowAll;
 
@@ -73,8 +74,12 @@ public class MetricsLoggingService extends AbstractIdleService {
 
     private MetricsLocationResolver locationResolver;
 
+    private ConfigDatabase configDb;
+
     @Inject
-    MetricsLoggingService(MetricRegistry metricRegistry, MetricsLocationResolver locationResolver) {
+    MetricsLoggingService(MetricRegistry metricRegistry, MetricsLocationResolver locationResolver,
+            ConfigDatabase configDb) {
+        this.configDb = configDb;
         checkNotNull(metricRegistry, "MetricsRegistry");
         checkNotNull(locationResolver, "locationResolver");
         this.metricRegistry = metricRegistry;
@@ -83,6 +88,10 @@ public class MetricsLoggingService extends AbstractIdleService {
 
     @Override
     protected void startUp() throws Exception {
+        if (!"true".equals(configDb.get("metrics.enabled").orNull())) {
+            return;
+        }
+
         LOGGER.trace("Starting up metrics service...");
         this.loggingFilter = new LoggingFilter();
 

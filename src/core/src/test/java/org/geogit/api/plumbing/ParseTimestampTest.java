@@ -46,6 +46,7 @@ public class ParseTimestampTest extends Assert {
 
         File workingDirectory = tempFolder.newFolder("mockWorkingDir");
         Platform testPlatform = new TestPlatform(workingDirectory) {
+            @Override
             public long currentTimeMillis() {
                 return REFERENCE_DATE.getTime();
             }
@@ -53,7 +54,7 @@ public class ParseTimestampTest extends Assert {
         Injector injector = Guice.createInjector(Modules.override(new GeogitModule()).with(
                 new MemoryModule(testPlatform)));
 
-        fakeGeogit = new GeoGIT(injector);
+        fakeGeogit = new GeoGIT(injector, workingDirectory);
         assertNotNull(fakeGeogit.getOrCreateRepository());
         command = fakeGeogit.command(ParseTimestamp.class);
     }

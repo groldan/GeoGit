@@ -106,7 +106,9 @@ public class GeoGitDataStoreFactoryTest extends RepositoryTestCase {
     public void testCreateDataStoreNotARepositoryDir() {
         Map<String, Serializable> params;
 
-        params = ImmutableMap.of(REPOSITORY.key, (Serializable) "target");
+        File f = new File("target", "someDir");
+        f.mkdir();
+        params = ImmutableMap.of(REPOSITORY.key, (Serializable) f);
         try {
             factory.createDataStore(params);
             fail("Expectd IOE on non existing repository");

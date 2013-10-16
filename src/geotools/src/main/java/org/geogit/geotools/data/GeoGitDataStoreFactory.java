@@ -125,7 +125,6 @@ public class GeoGitDataStoreFactory implements DataStoreFactorySpi {
             }
         }
 
-        GlobalInjectorBuilder.builder = new CLIInjectorBuilder();
         GeoGIT geogit;
         try {
             geogit = new GeoGIT(repositoryRoot);

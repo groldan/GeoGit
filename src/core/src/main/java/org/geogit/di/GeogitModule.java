@@ -38,9 +38,11 @@ import org.geogit.storage.memory.HeapDeduplicationService;
 import org.geogit.storage.memory.HeapStagingDatabase;
 
 import com.google.common.base.Throwables;
+import com.google.common.util.concurrent.Service;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.matcher.Matcher;
+import com.google.inject.multibindings.Multibinder;
 
 /**
  * Provides bindings for GeoGit singletons.
@@ -67,6 +69,11 @@ public class GeogitModule extends AbstractModule {
      */
     @Override
     protected void configure() {
+        // empty set binding for Service instances managed by the repo life cycle, so that other
+        // modules can contribute service bindings but if not the Repository constructor gets an
+        // empty set
+        Multibinder.newSetBinder(binder(), Service.class);
+
         bind(CommandLocator.class).to(GuiceCommandLocator.class).in(Scopes.SINGLETON);
 
         bind(Platform.class).to(DefaultPlatform.class).asEagerSingleton();
