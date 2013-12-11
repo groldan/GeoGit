@@ -35,7 +35,7 @@ public class ResolveOSMMappingLogFolder extends AbstractGeoGitOp<File> {
 
     @Override
     public File call() {
-        final URL geogitDirUrl = command(ResolveGeogitDir.class).call();
+        final URL geogitDirUrl = command(ResolveGeogitDir.class).call().get();
         File repoDir;
         try {
             repoDir = new File(geogitDirUrl.toURI());

@@ -257,10 +257,10 @@ public class JEStagingDatabase extends ForwardingStagingDatabase {
         }
         Optional<File> conflicts = Optional.absent();
         if (isOpen()) {
-            URL repoPath = new ResolveGeogitDir(platform).call();
+            Optional<URL> repoPath = new ResolveGeogitDir(platform).call();
             File file = null;
             try {
-                file = new File(repoPath.toURI());
+                file = new File(repoPath.get().toURI());
             } catch (URISyntaxException e1) {
                 Throwables.propagate(e1);
             }

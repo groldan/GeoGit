@@ -88,7 +88,7 @@ public class Main extends Application {
         Injector inj = GlobalInjectorBuilder.builder.build();
         GeoGIT geogit = new GeoGIT(inj, platform.pwd());
 
-        if (null != geogit.command(ResolveGeogitDir.class).call()) {
+        if (geogit.command(ResolveGeogitDir.class).call().isPresent()) {
             geogit.getRepository();
             return geogit;
         }

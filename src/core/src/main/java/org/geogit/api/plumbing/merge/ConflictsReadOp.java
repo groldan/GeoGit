@@ -4,23 +4,23 @@
  */
 package org.geogit.api.plumbing.merge;
 
-
 import java.net.URL;
 import java.util.List;
 
 import org.geogit.api.AbstractGeoGitOp;
 import org.geogit.api.plumbing.ResolveGeogitDir;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 
 public class ConflictsReadOp extends AbstractGeoGitOp<List<Conflict>> {
     @Override
     public List<Conflict> call() {
-        final URL repoUrl = getCommandLocator().command(ResolveGeogitDir.class).call();
-        if (repoUrl == null) {
-            return ImmutableList.of();
-        } else {
+        final Optional<URL> repoUrl = getCommandLocator().command(ResolveGeogitDir.class).call();
+        if (repoUrl.isPresent()) {
             return getIndex().getDatabase().getConflicts(null, null);
+        } else {
+            return ImmutableList.of();
         }
     }
 }

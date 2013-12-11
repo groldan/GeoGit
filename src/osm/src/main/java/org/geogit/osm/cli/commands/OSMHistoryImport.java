@@ -277,7 +277,7 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
     private File getBranchTrackingFile(GeoGIT geogit) throws IOException {
         final SymRef head = getHead(geogit);
         final String branch = head.getTarget();
-        final URL geogitDirUrl = geogit.command(ResolveGeogitDir.class).call();
+        final URL geogitDirUrl = geogit.command(ResolveGeogitDir.class).call().get();
         File repoDir;
         try {
             repoDir = new File(geogitDirUrl.toURI());

@@ -5,7 +5,7 @@
 package org.geogit.api.plumbing;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -30,18 +30,18 @@ public class ResolveGeogitDirTest {
         Platform platform = mock(Platform.class);
         when(platform.pwd()).thenReturn(workingDir);
 
-        URL resolvedRepoDir = new ResolveGeogitDir(platform).call();
+        URL resolvedRepoDir = new ResolveGeogitDir(platform).call().get();
         assertEquals(fakeRepo.toURI().toURL(), resolvedRepoDir);
 
         workingDir = new File(new File(workingDir, "subdir1"), "subdir2");
         workingDir.mkdirs();
         when(platform.pwd()).thenReturn(workingDir);
 
-        resolvedRepoDir = new ResolveGeogitDir(platform).call();
+        resolvedRepoDir = new ResolveGeogitDir(platform).call().get();
         assertEquals(fakeRepo.toURI().toURL(), resolvedRepoDir);
 
         when(platform.pwd()).thenReturn(new File("target"));
-        assertNull(new ResolveGeogitDir(platform).call());
+        assertFalse(new ResolveGeogitDir(platform).call().isPresent());
 
     }
 

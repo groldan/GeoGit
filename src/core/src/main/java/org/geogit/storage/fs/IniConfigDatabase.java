@@ -76,9 +76,9 @@ public class IniConfigDatabase implements ConfigDatabase {
 
     private Wini config() {
         if (localWini == null || !lastKnownWorkingDirectory.equals(platform.pwd())) {
-            final URL url = new ResolveGeogitDir(platform).call();
+            final Optional<URL> url = new ResolveGeogitDir(platform).call();
 
-            if (url == null) {
+            if (!url.isPresent()) {
                 throw new ConfigException(StatusCode.INVALID_LOCATION);
             }
 
@@ -88,9 +88,9 @@ public class IniConfigDatabase implements ConfigDatabase {
              */
             File localConfigFile;
             try {
-                localConfigFile = new File(new File(url.toURI()), "config");
+                localConfigFile = new File(new File(url.get().toURI()), "config");
             } catch (URISyntaxException e) {
-                localConfigFile = new File(url.getPath(), "config");
+                localConfigFile = new File(url.get().getPath(), "config");
             }
 
             lastKnownWorkingDirectory = platform.pwd();

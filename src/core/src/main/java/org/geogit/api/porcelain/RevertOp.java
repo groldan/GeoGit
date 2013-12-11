@@ -224,7 +224,7 @@ public class RevertOp extends AbstractGeoGitOp<Boolean> {
     }
 
     private File getRevertFolder() {
-        URL dir = command(ResolveGeogitDir.class).call();
+        URL dir = command(ResolveGeogitDir.class).call().get();
         File revertFolder = new File(dir.getFile(), "revert");
         if (!revertFolder.exists()) {
             Preconditions.checkState(revertFolder.mkdirs(), "Cannot create 'revert' folder");

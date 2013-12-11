@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 import org.geogit.api.Platform;
 import org.geogit.api.plumbing.ResolveGeogitDir;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.io.Files;
 import com.google.common.io.InputSupplier;
@@ -61,8 +62,8 @@ public class EnvironmentBuilder implements Provider<Environment> {
     @Override
     public synchronized Environment get() {
 
-        final URL repoUrl = new ResolveGeogitDir(platform).call();
-        if (repoUrl == null && absolutePath == null) {
+        final Optional<URL> repoUrl = new ResolveGeogitDir(platform).call();
+        if (!repoUrl.isPresent() && absolutePath == null) {
             throw new IllegalStateException("Can't find geogit repository home");
         }
         final File storeDirectory;
@@ -72,7 +73,7 @@ public class EnvironmentBuilder implements Provider<Environment> {
         } else {
             File currDir;
             try {
-                currDir = new File(repoUrl.toURI());
+                currDir = new File(repoUrl.get().toURI());
             } catch (URISyntaxException e) {
                 throw Throwables.propagate(e);
             }

@@ -11,6 +11,7 @@ import java.net.URL;
 import org.geogit.api.AbstractGeoGitOp;
 import org.geogit.api.Platform;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.inject.Inject;
@@ -23,7 +24,7 @@ import com.google.inject.Inject;
  * {@code .geogit} directory is found.
  * 
  */
-public class ResolveGeogitDir extends AbstractGeoGitOp<URL> {
+public class ResolveGeogitDir extends AbstractGeoGitOp<Optional<URL>> {
 
     private Platform platform;
 
@@ -43,7 +44,7 @@ public class ResolveGeogitDir extends AbstractGeoGitOp<URL> {
      * @see org.geogit.api.AbstractGeoGitOp#call()
      */
     @Override
-    public URL call() {
+    public Optional<URL> call() {
         File pwd = platform.pwd();
         URL lookup;
         try {
@@ -51,7 +52,7 @@ public class ResolveGeogitDir extends AbstractGeoGitOp<URL> {
         } catch (IOException e) {
             throw Throwables.propagate(e);
         }
-        return lookup;
+        return Optional.fromNullable(lookup);
     }
 
     /**

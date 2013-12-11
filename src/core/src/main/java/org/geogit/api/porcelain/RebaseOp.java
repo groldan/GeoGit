@@ -358,7 +358,7 @@ public class RebaseOp extends AbstractGeoGitOp<Boolean> {
     }
 
     private File getRebaseFolder() {
-        URL dir = command(ResolveGeogitDir.class).call();
+        URL dir = command(ResolveGeogitDir.class).call().get();
         File rebaseFolder = new File(dir.getFile(), "rebase-apply");
         if (!rebaseFolder.exists()) {
             Preconditions.checkState(rebaseFolder.mkdirs(), "Cannot create 'rebase-apply' folder");

@@ -29,6 +29,7 @@ import org.geogit.repository.Repository;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.io.Files;
 
@@ -123,8 +124,8 @@ public class Clone extends AbstractCommand implements CLICommand {
                 repoDir = new File(currDir, sp[sp.length - 1]).getCanonicalFile();
 
                 if (!repoDir.exists() && !repoDir.mkdirs()) {
-                  throw new CommandFailedException("Can't create directory "
-                      + repoDir.getAbsolutePath());
+                    throw new CommandFailedException("Can't create directory "
+                            + repoDir.getAbsolutePath());
                 }
             }
         }
@@ -148,17 +149,18 @@ public class Clone extends AbstractCommand implements CLICommand {
                     throw new FileNotFoundException("No filter file found at " + filterFile + ".");
                 }
 
-                URL envHome = new ResolveGeogitDir(cli.getPlatform()).call();
-                if (envHome == null) {
+                Optional<URL> envHome = new ResolveGeogitDir(cli.getPlatform()).call();
+                if (!envHome.isPresent()) {
                     throw new CommandFailedException("Not inside a geogit directory");
                 }
-                if (!"file".equals(envHome.getProtocol())) {
+                final URL envURL = envHome.get();
+                if (!"file".equals(envURL.getProtocol())) {
                     throw new UnsupportedOperationException(
                             "Sparse clone works only against file system repositories. "
-                                    + "Repository location: " + envHome.toExternalForm());
+                                    + "Repository location: " + envURL.toExternalForm());
                 }
                 try {
-                    repoDir = new File(envHome.toURI());
+                    repoDir = new File(envURL.toURI());
                 } catch (URISyntaxException e) {
                     throw Throwables.propagate(e);
                 }

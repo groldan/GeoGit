@@ -38,7 +38,7 @@ public class ResolveOSMLogfile extends AbstractGeoGitOp<URL> {
 
     @Override
     public URL call() {
-        final URL geogitDirUrl = command(ResolveGeogitDir.class).call();
+        final URL geogitDirUrl = command(ResolveGeogitDir.class).call().get();
         File repoDir;
         try {
             repoDir = new File(geogitDirUrl.toURI());

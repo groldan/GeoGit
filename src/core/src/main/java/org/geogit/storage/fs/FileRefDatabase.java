@@ -24,6 +24,7 @@ import org.geogit.repository.RepositoryConnectionException;
 import org.geogit.storage.AbstractRefDatabase;
 import org.geogit.storage.ConfigDatabase;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -58,18 +59,18 @@ public class FileRefDatabase extends AbstractRefDatabase {
      */
     @Override
     public void create() {
-        URL envHome = new ResolveGeogitDir(platform).call();
-        if (envHome == null) {
-            throw new IllegalStateException("Not inside a geogit directory");
-        }
-        if (!"file".equals(envHome.getProtocol())) {
+        Optional<URL> envHome = new ResolveGeogitDir(platform).call();
+        checkState(envHome.isPresent(), "Not inside a geogit directory");
+
+        final URL envURL = envHome.get();
+        if (!"file".equals(envURL.getProtocol())) {
             throw new UnsupportedOperationException(
                     "This References Database works only against file system repositories. "
-                            + "Repository location: " + envHome.toExternalForm());
+                            + "Repository location: " + envURL.toExternalForm());
         }
         File repoDir;
         try {
-            repoDir = new File(envHome.toURI());
+            repoDir = new File(envURL.toURI());
         } catch (URISyntaxException e) {
             throw Throwables.propagate(e);
         }
@@ -190,12 +191,12 @@ public class FileRefDatabase extends AbstractRefDatabase {
      * @return
      */
     private File toFile(String refPath) {
-        URL envHome = new ResolveGeogitDir(platform).call();
+        Optional<URL> envHome = new ResolveGeogitDir(platform).call();
 
         String[] path = refPath.split("/");
 
         try {
-            File file = new File(envHome.toURI());
+            File file = new File(envHome.get().toURI());
             for (String subpath : path) {
                 file = new File(file, subpath);
             }
@@ -249,8 +250,8 @@ public class FileRefDatabase extends AbstractRefDatabase {
     public Map<String, String> getAll(String namespace) {
         File refsRoot;
         try {
-            URL envHome = new ResolveGeogitDir(platform).call();
-            refsRoot = new File(envHome.toURI());
+            Optional<URL> envHome = new ResolveGeogitDir(platform).call();
+            refsRoot = new File(envHome.get().toURI());
         } catch (Exception e) {
             throw Throwables.propagate(e);
         }

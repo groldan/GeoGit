@@ -37,7 +37,7 @@ public class SaveMergeCommitMessageOp extends AbstractGeoGitOp<Void> {
 
     @Override
     public Void call() {
-        URL envHome = new ResolveGeogitDir(platform).call();
+        URL envHome = new ResolveGeogitDir(platform).call().get();
         try {
             File file = new File(envHome.toURI());
             file = new File(file, "MERGE_MSG");

@@ -5,6 +5,8 @@
 
 package org.geogit.remote;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.net.URISyntaxException;
@@ -66,18 +68,17 @@ public abstract class AbstractMappedRemoteRepo implements IRemoteRepo {
         String filterFile = filterResult.get().get("sparse.filter");
         Preconditions.checkState(filterFile != null, "No filter found for sparse clone.");
         try {
-            URL envHome = localRepository.command(ResolveGeogitDir.class).call();
-            if (envHome == null) {
-                throw new IllegalStateException("Not inside a geogit directory");
-            }
-            if (!"file".equals(envHome.getProtocol())) {
+            Optional<URL> envHome = localRepository.command(ResolveGeogitDir.class).call();
+            checkState(envHome.isPresent(), "Not inside a geogit directory");
+            final URL envLocation = envHome.get();
+            if (!"file".equals(envLocation.getProtocol())) {
                 throw new UnsupportedOperationException(
                         "Sparse clone works only against file system repositories. "
-                                + "Repository location: " + envHome.toExternalForm());
+                                + "Repository location: " + envLocation.toExternalForm());
             }
             File repoDir;
             try {
-                repoDir = new File(envHome.toURI());
+                repoDir = new File(envLocation.toURI());
             } catch (URISyntaxException e) {
                 throw Throwables.propagate(e);
             }

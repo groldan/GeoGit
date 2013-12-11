@@ -6,6 +6,7 @@ package org.geogit.storage.fs;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,6 +30,7 @@ import org.geogit.storage.ConfigDatabase;
 import org.geogit.storage.ObjectDatabase;
 import org.geogit.storage.ObjectSerializingFactory;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
@@ -97,13 +99,12 @@ public class FileObjectDatabase extends AbstractObjectDatabase implements Object
         if (isOpen()) {
             return;
         }
-        final URL repoUrl = new ResolveGeogitDir(platform).call();
-        if (repoUrl == null) {
-            throw new IllegalStateException("Can't find geogit repository home");
-        }
+        final Optional<URL> repoUrl = new ResolveGeogitDir(platform).call();
+        checkState(repoUrl.isPresent(), "Can't find geogit repository home");
+        
 
         try {
-            dataRoot = new File(new File(repoUrl.toURI()), databaseName);
+            dataRoot = new File(new File(repoUrl.get().toURI()), databaseName);
         } catch (URISyntaxException e) {
             throw Throwables.propagate(e);
         }

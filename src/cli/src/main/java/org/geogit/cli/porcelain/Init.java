@@ -23,6 +23,8 @@ import org.geogit.repository.Repository;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
+import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 
 /**
  * This command creates an empty geogit repository - basically a .geogit directory with
@@ -82,11 +84,12 @@ public class Init extends AbstractCommand implements CLICommand {
         geogit.setRepository(repository);
         cli.setGeogit(geogit);
 
-        final URL envHome = geogit.command(ResolveGeogitDir.class).call();
+        final Optional<URL> envHome = geogit.command(ResolveGeogitDir.class).call();
+        Preconditions.checkState(envHome.isPresent());
 
         File repoDirectory;
         try {
-            repoDirectory = new File(envHome.toURI());
+            repoDirectory = new File(envHome.get().toURI());
         } catch (URISyntaxException e) {
             throw new IllegalStateException("Environment home can't be resolved to a directory", e);
         }

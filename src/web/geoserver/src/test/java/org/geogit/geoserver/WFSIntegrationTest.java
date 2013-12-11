@@ -52,6 +52,7 @@ import org.opengis.filter.Filter;
 import org.w3c.dom.Document;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.base.Optional;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.util.Modules;
@@ -135,8 +136,8 @@ public class WFSIntegrationTest extends WFSTestSupport {
         ds.setWorkspace(ws);
         Map<String, Serializable> connParams = ds.getConnectionParameters();
 
-        URL geogitDir = helper.getGeogit().command(ResolveGeogitDir.class).call();
-        File repositoryUrl = new File(geogitDir.toURI()).getParentFile();
+        Optional<URL> geogitDir = helper.getGeogit().command(ResolveGeogitDir.class).call();
+        File repositoryUrl = new File(geogitDir.get().toURI()).getParentFile();
         assertTrue(repositoryUrl.exists() && repositoryUrl.isDirectory());
 
         connParams.put(GeoGitDataStoreFactory.REPOSITORY.key, repositoryUrl);

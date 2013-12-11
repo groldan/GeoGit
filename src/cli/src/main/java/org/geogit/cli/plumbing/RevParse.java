@@ -82,22 +82,22 @@ public class RevParse extends AbstractCommand {
     }
 
     private void isInsideWorkTree(ConsoleReader console, GeoGIT geogit) throws IOException {
-        URL repoUrl = geogit.command(ResolveGeogitDir.class).call();
+        Optional<URL> repoUrl = geogit.command(ResolveGeogitDir.class).call();
 
         File pwd = geogit.getPlatform().pwd();
 
-        if (null == repoUrl) {
-            console.println("Error: not a geogit repository (or any parent) '"
-                    + pwd.getAbsolutePath() + "'");
-        } else {
+        if (repoUrl.isPresent()) {
             boolean insideWorkTree = !pwd.getAbsolutePath().contains(".geogit");
             console.println(String.valueOf(insideWorkTree));
+        } else {
+            console.println("Error: not a geogit repository (or any parent) '"
+                    + pwd.getAbsolutePath() + "'");
         }
     }
 
     private void resolveGeogitDir(ConsoleReader console, GeoGIT geogit) throws IOException {
 
-        URL repoUrl = geogit.command(ResolveGeogitDir.class).call();
+        URL repoUrl = geogit.command(ResolveGeogitDir.class).call().orNull();
         if (null == repoUrl) {
             File currDir = geogit.getPlatform().pwd();
             console.println("Error: not a geogit dir '"

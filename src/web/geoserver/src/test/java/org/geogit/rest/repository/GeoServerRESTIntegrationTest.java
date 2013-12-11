@@ -48,6 +48,7 @@ import org.opengis.feature.Feature;
 import org.opengis.feature.type.FeatureType;
 import org.restlet.data.MediaType;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
@@ -122,8 +123,8 @@ public class GeoServerRESTIntegrationTest extends GeoServerSystemTestSupport {
         ds.setWorkspace(ws);
         Map<String, Serializable> connParams = ds.getConnectionParameters();
 
-        URL geogitDir = helper.getGeogit().command(ResolveGeogitDir.class).call();
-        File repositoryUrl = new File(geogitDir.toURI()).getParentFile();
+        Optional<URL> geogitDir = helper.getGeogit().command(ResolveGeogitDir.class).call();
+        File repositoryUrl = new File(geogitDir.get().toURI()).getParentFile();
         assertTrue(repositoryUrl.exists() && repositoryUrl.isDirectory());
 
         connParams.put(GeoGitDataStoreFactory.REPOSITORY.key, repositoryUrl);

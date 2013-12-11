@@ -16,6 +16,7 @@ import org.geogit.api.plumbing.diff.DiffObjectCount;
 import org.geogit.api.porcelain.InitOp;
 import org.geogit.repository.Repository;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.inject.Injector;
 
@@ -135,9 +136,8 @@ public class GeoGIT {
             return repository;
         }
 
-        final URL repoLocation = command(ResolveGeogitDir.class).call();
-        final boolean repoFound = null != repoLocation;
-        if (repoFound) {
+        final Optional<URL> repoLocation = command(ResolveGeogitDir.class).call();
+        if (repoLocation.isPresent()) {
             try {
                 repository = injector.getInstance(Repository.class);
                 repository.open();

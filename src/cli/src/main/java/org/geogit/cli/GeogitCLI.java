@@ -163,7 +163,7 @@ public class GeogitCLI {
     private GeoGIT loadRepository() {
         GeoGIT geogit = newGeoGIT();
 
-        if (null != geogit.command(ResolveGeogitDir.class).call()) {
+        if (geogit.command(ResolveGeogitDir.class).call().isPresent()) {
             geogit.getRepository();
             return geogit;
         }
@@ -262,8 +262,8 @@ public class GeogitCLI {
     void tryConfigureLogging() {
         // instantiate and call ResolveGeogitDir directly to avoid calling getGeogit() and hence get
         // some logging events before having configured logging
-        final URL geogitDirUrl = new ResolveGeogitDir(getPlatform()).call();
-        if (geogitDirUrl == null || !"file".equalsIgnoreCase(geogitDirUrl.getProtocol())) {
+        final Optional<URL> geogitDirUrl = new ResolveGeogitDir(getPlatform()).call();
+        if (!geogitDirUrl.isPresent() || !"file".equalsIgnoreCase(geogitDirUrl.get().getProtocol())) {
             // redirect java.util.logging to SLF4J anyways
             SLF4JBridgeHandler.removeHandlersForRootLogger();
             SLF4JBridgeHandler.install();
@@ -272,7 +272,7 @@ public class GeogitCLI {
 
         final File geogitDir;
         try {
-            geogitDir = new File(geogitDirUrl.toURI());
+            geogitDir = new File(geogitDirUrl.get().toURI());
         } catch (URISyntaxException e) {
             throw Throwables.propagate(e);
         }

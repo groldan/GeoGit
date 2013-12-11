@@ -26,20 +26,21 @@ import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 
 /**
- * Provides an default in memory implementation of a GeoGit Graph Database. 
+ * Provides an default in memory implementation of a GeoGit Graph Database.
  */
 public class HeapGraphDatabase implements GraphDatabase {
 
-    static final Function<Node,ObjectId> NODE_TO_ID = new Function<Node,ObjectId>() {
+    static final Function<Node, ObjectId> NODE_TO_ID = new Function<Node, ObjectId>() {
         @Override
         public ObjectId apply(Node n) {
             return n.id;
         }
     };
 
-    static final Map<URL,Ref> graphs = Maps.newConcurrentMap();
+    static final Map<URL, Ref> graphs = Maps.newConcurrentMap();
 
     final Platform platform;
+
     Graph graph;
 
     @Inject
@@ -53,16 +54,16 @@ public class HeapGraphDatabase implements GraphDatabase {
             return;
         }
 
-        URL url = new ResolveGeogitDir(platform).call();
-        if (url != null) {
+        Optional<URL> url = new ResolveGeogitDir(platform).call();
+        if (url.isPresent()) {
             synchronized (graphs) {
-                if (!graphs.containsKey(url)) {
-                    graphs.put(url, new Ref(new Graph()));
+                URL key = url.get();
+                if (!graphs.containsKey(key)) {
+                    graphs.put(key, new Ref(new Graph()));
                 }
-                graph = graphs.get(url).acquire();
+                graph = graphs.get(key).acquire();
             }
-        }
-        else {
+        } else {
             graph = new Graph();
         }
 
@@ -72,7 +73,7 @@ public class HeapGraphDatabase implements GraphDatabase {
     public void configure() {
         // No-op
     }
-    
+
     @Override
     public void checkConfig() {
         // No-op
@@ -90,13 +91,14 @@ public class HeapGraphDatabase implements GraphDatabase {
         }
         graph = null;
 
-        URL url = new ResolveGeogitDir(platform).call();
-        if (url != null) {
+        Optional<URL> url = new ResolveGeogitDir(platform).call();
+        if (url.isPresent()) {
             synchronized (graphs) {
-                Ref ref = graphs.get(url);
+                URL key = url.get();
+                Ref ref = graphs.get(key);
                 if (ref != null && ref.release() <= -1) {
                     ref.destroy();
-                    graphs.remove(url);
+                    graphs.remove(key);
                 }
             }
         }
@@ -109,26 +111,26 @@ public class HeapGraphDatabase implements GraphDatabase {
 
     @Override
     public ImmutableList<ObjectId> getParents(ObjectId commitId) throws IllegalArgumentException {
-        return graph.get(commitId).transform(new Function<Node,ImmutableList<ObjectId>>() {
+        return graph.get(commitId).transform(new Function<Node, ImmutableList<ObjectId>>() {
             @Override
             public ImmutableList<ObjectId> apply(Node n) {
                 // transform outgoing nodes to id
                 // filter for null to skip fake root node
                 return new ImmutableList.Builder<ObjectId>().addAll(
-                    filter(transform(n.to(), NODE_TO_ID), Predicates.notNull())).build();
+                        filter(transform(n.to(), NODE_TO_ID), Predicates.notNull())).build();
             }
-        }).or((ImmutableList)ImmutableList.of());
+        }).or((ImmutableList) ImmutableList.of());
     }
 
     @Override
     public ImmutableList<ObjectId> getChildren(ObjectId commitId) throws IllegalArgumentException {
-        return graph.get(commitId).transform(new Function<Node,ImmutableList<ObjectId>>() {
+        return graph.get(commitId).transform(new Function<Node, ImmutableList<ObjectId>>() {
             @Override
             public ImmutableList<ObjectId> apply(Node n) {
-                return new ImmutableList.Builder<ObjectId>().addAll(transform(n.from(),NODE_TO_ID))
-                    .build();
+                return new ImmutableList.Builder<ObjectId>()
+                        .addAll(transform(n.from(), NODE_TO_ID)).build();
             }
-        }).or((ImmutableList)ImmutableList.of());
+        }).or((ImmutableList) ImmutableList.of());
     }
 
     @Override
@@ -151,7 +153,7 @@ public class HeapGraphDatabase implements GraphDatabase {
                 graph.newEdge(n, p);
             }
 
-            //only mark as updated if it is actually attached
+            // only mark as updated if it is actually attached
             return !Iterables.isEmpty(n.to());
         }
         return false;
@@ -188,7 +190,7 @@ public class HeapGraphDatabase implements GraphDatabase {
         PathToRootWalker right = new PathToRootWalker(graph.get(rightId).get());
 
         Set<Node> ancestors = Sets.newLinkedHashSet();
-        while(left.hasNext() || right.hasNext()) {
+        while (left.hasNext() || right.hasNext()) {
             if (left.hasNext()) {
                 for (Node l : left.next()) {
                     if (right.seen(l)) {
@@ -211,8 +213,8 @@ public class HeapGraphDatabase implements GraphDatabase {
         }
 
         if (ancestors.size() > 1) {
-            // multiple candidates, try to filter down by removing candidates that are 
-            // ancestors of other candidates 
+            // multiple candidates, try to filter down by removing candidates that are
+            // ancestors of other candidates
             Set<Node> filtered = Sets.newLinkedHashSet(ancestors);
             for (Node ancestor : ancestors) {
                 PathToRootWalker w = new PathToRootWalker(ancestor);
@@ -232,13 +234,14 @@ public class HeapGraphDatabase implements GraphDatabase {
 
     @Override
     public void setProperty(ObjectId commitId, String propertyName, String propertyValue) {
-        graph.get(commitId).get().put(propertyName, propertyValue);;
+        graph.get(commitId).get().put(propertyName, propertyValue);
+        ;
     }
 
     @Override
     public boolean isSparsePath(ObjectId start, ObjectId end) {
         ShortestPathWalker p = new ShortestPathWalker(graph.get(start).get(), graph.get(end).get());
-        while(p.hasNext()) {
+        while (p.hasNext()) {
             Node n = p.next();
             if (Boolean.valueOf(n.get(GraphDatabase.SPARSE_FLAG).or("false"))) {
                 return true;
@@ -255,6 +258,7 @@ public class HeapGraphDatabase implements GraphDatabase {
     static class Ref {
 
         int count;
+
         Graph graph;
 
         Ref(Graph g) {
