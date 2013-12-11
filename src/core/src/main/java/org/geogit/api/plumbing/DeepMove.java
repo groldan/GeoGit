@@ -28,10 +28,13 @@ import org.geogit.repository.StagingArea;
 import org.geogit.storage.BulkOpListener;
 import org.geogit.storage.ObjectDatabase;
 import org.geogit.storage.StagingDatabase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
+import com.google.common.base.Stopwatch;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.AbstractIterator;
@@ -47,6 +50,8 @@ import com.google.inject.Inject;
  * {@code true}.
  */
 public class DeepMove extends AbstractGeoGitOp<ObjectId> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DeepMove.class);
 
     private boolean toIndex;
 
@@ -161,7 +166,9 @@ public class DeepMove extends AbstractGeoGitOp<ObjectId> {
 
         @Override
         public void run() {
+            Stopwatch s = new Stopwatch().start();
             db.deleteAll(ids.iterator());
+            LOGGER.debug("Removed {} objects in {}", ids.size(), s.stop());
             ids.clear();
             ids = null;
         }
@@ -169,7 +176,7 @@ public class DeepMove extends AbstractGeoGitOp<ObjectId> {
 
     private static class DeletingListener extends BulkOpListener {
 
-        private final int limit = 1000 * 10;
+        private final int limit = 1000 * 100;
 
         final List<ObjectId> removeIds = Lists.newArrayListWithCapacity(limit);
 
@@ -230,7 +237,14 @@ public class DeepMove extends AbstractGeoGitOp<ObjectId> {
             final DeletingListener deletingListener = new DeletingListener(deletingService, from);
 
             // store objects into the target db and remove them from the origin db in one shot
-            to.putAll(from.getAll(ids), deletingListener);
+            Iterator<RevObject> objects;
+            if (from instanceof StagingDatabase) {
+                objects = ((StagingDatabase) from).getAllPresentStagingOnly(ids,
+                        BulkOpListener.NOOP_LISTENER);
+            } else {
+                objects = from.getAll(ids);
+            }
+            to.putAll(objects, deletingListener);
             // in case there are some deletes pending cause the iterator finished and the listener
             // didn't fill its buffer
             deletingListener.deleteInserted();
@@ -272,7 +286,7 @@ public class DeepMove extends AbstractGeoGitOp<ObjectId> {
         Supplier<Iterator<NodeRef>> refs = command(LsTreeOp.class).setReference(treeId.toString())
                 .setStrategy(Strategy.DEPTHFIRST_ONLY_FEATURES);
 
-        Supplier<Iterator<Node>> nodes = Suppliers.compose(
+        final Supplier<Iterator<Node>> nodes = Suppliers.compose(
                 new Function<Iterator<NodeRef>, Iterator<Node>>() {
 
                     @Override
