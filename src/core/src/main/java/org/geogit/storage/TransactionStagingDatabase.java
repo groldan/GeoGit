@@ -205,8 +205,8 @@ public class TransactionStagingDatabase implements StagingDatabase {
     }
 
     @Override
-    public Iterator<RevObject> getAll(Iterable<ObjectId> ids, final BulkOpListener listener) {
-        return database.getAll(ids, listener);
+    public Iterator<RevObject> getAllPresent(Iterable<ObjectId> ids, final BulkOpListener listener) {
+        return database.getAllPresent(ids, listener);
     }
 
     /**
@@ -270,8 +270,8 @@ public class TransactionStagingDatabase implements StagingDatabase {
     }
 
     @Override
-    public Iterator<RevObject> getAll(final Iterable<ObjectId> ids) {
-        return getAll(ids, BulkOpListener.NOOP_LISTENER);
+    public Iterator<RevObject> getAllPresent(final Iterable<ObjectId> ids) {
+        return getAllPresent(ids, BulkOpListener.NOOP_LISTENER);
     }
 
     @Override
@@ -285,7 +285,8 @@ public class TransactionStagingDatabase implements StagingDatabase {
     }
 
     @Override
-    public Iterator<RevObject> getAllPresentStagingOnly(Iterable<ObjectId> ids, BulkOpListener listener) {
+    public Iterator<RevObject> getAllPresentStagingOnly(Iterable<ObjectId> ids,
+            BulkOpListener listener) {
         return database.getAllPresentStagingOnly(ids, listener);
     }
 }

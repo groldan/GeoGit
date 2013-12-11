@@ -25,8 +25,9 @@ public interface StagingDatabase extends ObjectDatabase {
      * Query method to retrieve a collection of objects from the staging database <b>only</b>, given
      * a collection of object identifiers.
      * <p>
-     * This method is similar to {@link #getAll(Iterable, BulkOpListener)} but without the overhead
-     * of querying the {@link ObjectDatabase} for objects not found in the staging database.
+     * This method is similar to {@link #getAllPresent(Iterable, BulkOpListener)} but without the
+     * overhead of querying the {@link ObjectDatabase} for objects not found in the staging
+     * database.
      * <p>
      * The returned iterator may not preserve the order of the argument list of ids.
      * <p>

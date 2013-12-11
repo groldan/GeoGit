@@ -16,8 +16,8 @@ public abstract class BulkOpListener {
     };
 
     /**
-     * Signals each object found at {@link ObjectDatabase#getAll(Iterable, BulkOpListener)} as the
-     * returned iterator is traversed, or each object not inserted at
+     * Signals each object found at {@link ObjectDatabase#getAllPresent(Iterable, BulkOpListener)}
+     * as the returned iterator is traversed, or each object not inserted at
      * {@link ObjectDatabase#putAll(java.util.Iterator, BulkOpListener)} because it already exists.
      * 
      * @param object the object found
@@ -51,7 +51,7 @@ public abstract class BulkOpListener {
 
     /**
      * Signals each object not found in the database at either
-     * {@link ObjectDatabase#getAll(Iterable, BulkOpListener)} or
+     * {@link ObjectDatabase#getAllPresent(Iterable, BulkOpListener)} or
      * {@link ObjectDatabase#deleteAll(java.util.Iterator, BulkOpListener)}.
      * 
      * @param id the identifier of the object not found in the database

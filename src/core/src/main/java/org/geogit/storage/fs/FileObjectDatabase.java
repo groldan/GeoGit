@@ -254,7 +254,7 @@ public class FileObjectDatabase extends AbstractObjectDatabase implements Object
     }
 
     @Override
-    public Iterator<RevObject> getAll(Iterable<ObjectId> ids, BulkOpListener listener) {
+    public Iterator<RevObject> getAllPresent(Iterable<ObjectId> ids, BulkOpListener listener) {
         throw new UnsupportedOperationException("This method is not yet implemented");
     }
 

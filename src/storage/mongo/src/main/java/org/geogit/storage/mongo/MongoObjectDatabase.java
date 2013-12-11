@@ -49,6 +49,7 @@ import com.mongodb.WriteResult;
  */
 public class MongoObjectDatabase implements ObjectDatabase {
     private final MongoConnectionManager manager;
+
     protected final ConfigDatabase config;
 
     private MongoClient client = null;
@@ -268,7 +269,7 @@ public class MongoObjectDatabase implements ObjectDatabase {
             boolean put = put(object);
             if (put) {
                 listener.inserted(object.getId(), null);
-            }else{
+            } else {
                 listener.found(object.getId(), null);
             }
         }
@@ -280,12 +281,13 @@ public class MongoObjectDatabase implements ObjectDatabase {
     }
 
     @Override
-    public Iterator<RevObject> getAll(Iterable<ObjectId> ids) {
-        return getAll(ids, BulkOpListener.NOOP_LISTENER);
+    public Iterator<RevObject> getAllPresent(Iterable<ObjectId> ids) {
+        return getAllPresent(ids, BulkOpListener.NOOP_LISTENER);
     }
 
     @Override
-    public Iterator<RevObject> getAll(final Iterable<ObjectId> ids, final BulkOpListener listener) {
+    public Iterator<RevObject> getAllPresent(final Iterable<ObjectId> ids,
+            final BulkOpListener listener) {
 
         return new AbstractIterator<RevObject>() {
             final Iterator<ObjectId> queryIds = ids.iterator();

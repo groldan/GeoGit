@@ -266,8 +266,8 @@ public abstract class AbstractObjectDatabase implements ObjectDatabase {
     }
 
     @Override
-    public Iterator<RevObject> getAll(final Iterable<ObjectId> ids) {
-        return getAll(ids, BulkOpListener.NOOP_LISTENER);
+    public Iterator<RevObject> getAllPresent(final Iterable<ObjectId> ids) {
+        return getAllPresent(ids, BulkOpListener.NOOP_LISTENER);
     }
 
     @Override

@@ -110,19 +110,20 @@ public abstract class ForwardingStagingDatabase implements StagingDatabase {
     }
 
     @Override
-    public Iterator<RevObject> getAll(Iterable<ObjectId> ids) {
-        return getAll(ids, BulkOpListener.NOOP_LISTENER);
+    public Iterator<RevObject> getAllPresent(Iterable<ObjectId> ids) {
+        return getAllPresent(ids, BulkOpListener.NOOP_LISTENER);
     }
 
     @Override
-    public Iterator<RevObject> getAll(final Iterable<ObjectId> ids, final BulkOpListener listener) {
+    public Iterator<RevObject> getAllPresent(final Iterable<ObjectId> ids,
+            final BulkOpListener listener) {
         return StagingDbCompositionHelper.getAll(repositoryDb, stagingDb, ids, listener);
     }
 
     @Override
     public Iterator<RevObject> getAllPresentStagingOnly(final Iterable<ObjectId> ids,
             final BulkOpListener listener) {
-        return stagingDb.getAll(ids, listener);
+        return stagingDb.getAllPresent(ids, listener);
     }
 
     @Override

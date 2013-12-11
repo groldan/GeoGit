@@ -242,7 +242,7 @@ public class DeepMove extends AbstractGeoGitOp<ObjectId> {
                 objects = ((StagingDatabase) from).getAllPresentStagingOnly(ids,
                         BulkOpListener.NOOP_LISTENER);
             } else {
-                objects = from.getAll(ids);
+                objects = from.getAllPresent(ids);
             }
             to.putAll(objects, deletingListener);
             // in case there are some deletes pending cause the iterator finished and the listener

@@ -85,7 +85,7 @@ public class JEObjectDatabase extends AbstractObjectDatabase implements ObjectDa
     /**
      * The default number of objects bulk operations are partitioned into
      * 
-     * @see #getAll(Iterable, BulkOpListener)
+     * @see #getAllPresent(Iterable, BulkOpListener)
      * @see #putAll(Iterator, BulkOpListener)
      * @see #deleteAll(Iterator, BulkOpListener)
      */
@@ -656,7 +656,8 @@ public class JEObjectDatabase extends AbstractObjectDatabase implements ObjectDa
     }
 
     @Override
-    public Iterator<RevObject> getAll(final Iterable<ObjectId> ids, final BulkOpListener listener) {
+    public Iterator<RevObject> getAllPresent(final Iterable<ObjectId> ids,
+            final BulkOpListener listener) {
         Preconditions.checkNotNull(ids, "ids");
 
         return new CursorRevObjectIterator(ids.iterator(), listener);

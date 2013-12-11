@@ -28,7 +28,7 @@ public class StagingDbCompositionHelper {
             }
         };
 
-        final Iterator<RevObject> foundInStaging = stagingDb.getAll(ids, stagingListener);
+        final Iterator<RevObject> foundInStaging = stagingDb.getAllPresent(ids, stagingListener);
 
         Iterator<RevObject> compositeIterator = new AbstractIterator<RevObject>() {
 
@@ -43,7 +43,7 @@ public class StagingDbCompositionHelper {
                     List<ObjectId> missing = new ArrayList<ObjectId>(missingInStaging);
                     missingInStaging.clear();
 
-                    forwardedToObjectDb = objectDb.getAll(missing, listener);
+                    forwardedToObjectDb = objectDb.getAllPresent(missing, listener);
                     return computeNext();
                 }
                 if (foundInStaging.hasNext()) {
@@ -53,7 +53,7 @@ public class StagingDbCompositionHelper {
                 } else if (!missingInStaging.isEmpty()) {
                     List<ObjectId> missing = new ArrayList<ObjectId>(missingInStaging);
                     missingInStaging.clear();
-                    forwardedToObjectDb = objectDb.getAll(missing, listener);
+                    forwardedToObjectDb = objectDb.getAllPresent(missing, listener);
                     return computeNext();
                 }
                 return endOfData();

@@ -158,7 +158,8 @@ public class HeapObjectDatabse extends AbstractObjectDatabase implements ObjectD
     }
 
     @Override
-    public Iterator<RevObject> getAll(final Iterable<ObjectId> ids, final BulkOpListener listener) {
+    public Iterator<RevObject> getAllPresent(final Iterable<ObjectId> ids,
+            final BulkOpListener listener) {
 
         return new AbstractIterator<RevObject>() {
             final Iterator<ObjectId> iterator = ids.iterator();

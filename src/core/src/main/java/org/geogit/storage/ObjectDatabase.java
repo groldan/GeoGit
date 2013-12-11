@@ -147,10 +147,10 @@ public interface ObjectDatabase {
     public boolean delete(ObjectId objectId);
 
     /**
-     * Shorthand for {@link #getAll(Iterable, BulkOpListener)} with
+     * Shorthand for {@link #getAllPresent(Iterable, BulkOpListener)} with
      * {@link BulkOpListener#NOOP_LISTENER} as second argument
      */
-    public Iterator<RevObject> getAll(final Iterable<ObjectId> ids);
+    public Iterator<RevObject> getAllPresent(final Iterable<ObjectId> ids);
 
     /**
      * Query method to retrieve a collection of objects from the database, given a collection of
@@ -169,7 +169,7 @@ public interface ObjectDatabase {
      *        deleted} and {@link BulkOpListener#notFound(ObjectId) not found} items
      * @return an iterator with the objects <b>found</b> on the database, in no particular order
      */
-    public Iterator<RevObject> getAll(final Iterable<ObjectId> ids, BulkOpListener listener);
+    public Iterator<RevObject> getAllPresent(final Iterable<ObjectId> ids, BulkOpListener listener);
 
     /**
      * Shorthand for {@link #putAll(Iterator, BulkOpListener)} with
