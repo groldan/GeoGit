@@ -5,12 +5,10 @@
 package org.geogit.storage.bdbje;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.Iterators.partition;
 import static com.sleepycat.je.OperationStatus.NOTFOUND;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
 import java.io.ByteArrayInputStream;
-import java.io.Closeable;
 import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -38,7 +36,6 @@ import org.geogit.storage.AbstractObjectDatabase;
 import org.geogit.storage.BulkOpListener;
 import org.geogit.storage.ConfigDatabase;
 import org.geogit.storage.ObjectDatabase;
-import org.geogit.storage.ObjectReader;
 import org.geogit.storage.ObjectSerializingFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,13 +45,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
 import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.UnmodifiableIterator;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
-import com.ning.compress.lzf.LZFInputStream;
 import com.sleepycat.je.CacheMode;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.CursorConfig;
@@ -306,6 +299,7 @@ public class JEObjectDatabase extends AbstractObjectDatabase implements ObjectDa
         } catch (Exception e) {
             throw Throwables.propagate(e);
         }
+
     }
 
     private class BulkInsert {
@@ -342,6 +336,7 @@ public class JEObjectDatabase extends AbstractObjectDatabase implements ObjectDa
                         // future.get();
                         // out.reset();
                         // offsets.clear();
+                        int usedBufferSize = out.size();
                         out = new InternalByteArrayOutputStream(this.buffSize);
                         offsets = Maps.newTreeMap(ObjectId.NATURAL_ORDER);
                         pendingWrites.add(future);
@@ -350,7 +345,7 @@ public class JEObjectDatabase extends AbstractObjectDatabase implements ObjectDa
                         }
 
                         LOGGER.debug("Inserted {} objects with a byte buffer of {} KB",
-                                objectsInBuffer, (out.size() / 1024));
+                                objectsInBuffer, (usedBufferSize / 1024));
                         objectsInBuffer = 0;
                         out.reset();
                     }
@@ -599,50 +594,41 @@ public class JEObjectDatabase extends AbstractObjectDatabase implements ObjectDa
     @Override
     public long deleteAll(Iterator<ObjectId> ids, final BulkOpListener listener) {
 
-        long count = 0;
-
-        UnmodifiableIterator<List<ObjectId>> partition = partition(ids, getBulkPartitionSize());
+        long deletedCount = 0;
+        long processed = 0;
+        final int bulkPartitionSize = getBulkPartitionSize();
 
         final DatabaseEntry data = new DatabaseEntry();
         data.setPartial(0, 0, true);// do not retrieve data
 
-        while (partition.hasNext()) {
-            List<ObjectId> nextIds = Lists.newArrayList(partition.next());
-            Collections.sort(nextIds);
+        Transaction transaction = newTransaction();
+        try {
+            DatabaseEntry key = new DatabaseEntry(new byte[ObjectId.NUM_BYTES]);
+            ObjectId id;
+            while (ids.hasNext()) {
+                id = ids.next();
+                // copy id to key object without allocating new byte[]
+                id.getRawValue(key.getData());
 
-            final Transaction transaction = newTransaction();
-
-            CursorConfig cconfig = new CursorConfig();
-            final Cursor cursor = objectDb.openCursor(transaction, cconfig);
-
-            try {
-                DatabaseEntry key = new DatabaseEntry(new byte[ObjectId.NUM_BYTES]);
-                for (ObjectId id : nextIds) {
-                    // copy id to key object without allocating new byte[]
-                    id.getRawValue(key.getData());
-
-                    OperationStatus status = cursor.getSearchKey(key, data, LockMode.DEFAULT);
-                    if (OperationStatus.SUCCESS.equals(status)) {
-                        OperationStatus delete = cursor.delete();
-                        if (OperationStatus.SUCCESS.equals(delete)) {
-                            listener.deleted(id);
-                            count++;
-                        } else {
-                            listener.notFound(id);
-                        }
-                    } else {
-                        listener.notFound(id);
-                    }
+                processed++;
+                OperationStatus delete = objectDb.delete(transaction, key);
+                if (OperationStatus.SUCCESS.equals(delete)) {
+                    listener.deleted(id);
+                    deletedCount++;
+                } else {
+                    listener.notFound(id);
                 }
-                cursor.close();
-            } catch (Exception e) {
-                cursor.close();
-                abort(transaction);
-                Throwables.propagate(e);
+                if (processed % bulkPartitionSize == 0) {
+                    commit(transaction);
+                    transaction = newTransaction();
+                }
             }
             commit(transaction);
+        } catch (Exception e) {
+            abort(transaction);
+            throw Throwables.propagate(e);
         }
-        return count;
+        return deletedCount;
     }
 
     @Override
@@ -659,115 +645,25 @@ public class JEObjectDatabase extends AbstractObjectDatabase implements ObjectDa
     public Iterator<RevObject> getAllPresent(final Iterable<ObjectId> ids,
             final BulkOpListener listener) {
         Preconditions.checkNotNull(ids, "ids");
+        return new AbstractIterator<RevObject>() {
+            final Iterator<ObjectId> iterator = ids.iterator();
 
-        return new CursorRevObjectIterator(ids.iterator(), listener);
-    }
-
-    private class CursorRevObjectIterator extends AbstractIterator<RevObject> implements Closeable {
-
-        private final ObjectReader<RevObject> reader = serializationFactory.createObjectReader();
-
-        @Nullable
-        private Transaction transaction;
-
-        private Cursor cursor;
-
-        private BulkOpListener listener;
-
-        private UnmodifiableIterator<List<ObjectId>> unsortedIds;
-
-        private Iterator<ObjectId> sortedIds;
-
-        /**
-         * Uses a transaction to open a read only cursor for it to work when called from a different
-         * threads than the one it was created at. The transaction is aborted at {@link #close()}
-         */
-        public CursorRevObjectIterator(final Iterator<ObjectId> objectIds,
-                final BulkOpListener listener) {
-
-            this.unsortedIds = Iterators.partition(objectIds, getBulkPartitionSize());
-            this.sortedIds = Iterators.emptyIterator();
-
-            this.listener = listener;
-            CursorConfig cursorConfig = new CursorConfig();
-            cursorConfig.setReadUncommitted(true);
-            transaction = getOrCreateTransaction();
-            this.cursor = objectDb.openCursor(transaction, cursorConfig);
-        }
-
-        private Transaction getOrCreateTransaction() {
-            final boolean transactional = objectDb.getConfig().getTransactional();
-            if (!transactional) {
-                return null;
-            }
-            TransactionConfig config = new TransactionConfig();
-            config.setReadUncommitted(true);
-            Transaction t = env.beginTransaction(null, config);
-            return t;
-        }
-
-        @Override
-        protected RevObject computeNext() {
-            if (!sortedIds.hasNext()) {
-                if (unsortedIds.hasNext()) {
-                    List<ObjectId> unsorted = unsortedIds.next();
-                    List<ObjectId> sorted = ObjectId.NATURAL_ORDER.sortedCopy(unsorted);
-                    this.sortedIds = sorted.iterator();
-                } else {
-                    close();
-                    return endOfData();
-                }
-            }
-            try {
-
-                byte[] keyBuff = new byte[ObjectId.NUM_BYTES];
-                DatabaseEntry key = new DatabaseEntry(keyBuff);
-
-                RevObject found = null;
-                while (sortedIds.hasNext() && found == null) {
-                    ObjectId id = sortedIds.next();
-                    id.getRawValue(keyBuff);
-                    key.setData(keyBuff);
-
-                    DatabaseEntry data = new DatabaseEntry();
-                    // lookup data for the next key
-                    OperationStatus status;
-                    status = cursor.getSearchKey(key, data, LockMode.READ_UNCOMMITTED);
-                    if (SUCCESS.equals(status)) {
-                        InputStream rawData;
-                        rawData = new LZFInputStream(new ByteArrayInputStream(data.getData()));
-                        found = reader.read(id, rawData);
-                        listener.found(found.getId(), data.getSize());
+            @Override
+            protected RevObject computeNext() {
+                ObjectId id;
+                RevObject raw = null;
+                while (iterator.hasNext() && raw == null) {
+                    id = iterator.next();
+                    raw = getIfPresent(id);
+                    if (raw != null) {
+                        listener.found(raw.getId(), null);
                     } else {
                         listener.notFound(id);
                     }
                 }
-                if (found == null) {
-                    return computeNext();
-                }
-                return found;
-            } catch (Exception e) {
-                try {
-                    throw Throwables.propagate(e);
-                } finally {
-                    close();
-                }
+                return raw == null ? endOfData() : raw;
             }
-        }
-
-        @Override
-        public void close() {
-            sortedIds = null;
-            Cursor cursor = this.cursor;
-            this.cursor = null;
-            if (cursor != null) {
-                cursor.close();
-            }
-            if (transaction != null) {
-                transaction.abort();
-                transaction = null;
-            }
-        }
+        };
     }
 
     private int getBulkPartitionSize() {
