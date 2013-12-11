@@ -102,9 +102,10 @@ public abstract class ForwardingStagingDatabase implements StagingDatabase {
 
     @Override
     public boolean put(RevObject object) {
-//        if (repositoryDb.exists(object.getId())) {
-//            return false;
-//        }
+        // Note we store the object in the staging database without querying the object database for
+        // existence on purpose, due to the huge overhead. This may lead to dangling objects in the
+        // staging database, but that's not too much of a problem as the staging db is disposable
+        // after committing everything
         return stagingDb.put(object);
     }
 
@@ -116,6 +117,12 @@ public abstract class ForwardingStagingDatabase implements StagingDatabase {
     @Override
     public Iterator<RevObject> getAll(final Iterable<ObjectId> ids, final BulkOpListener listener) {
         return StagingDbCompositionHelper.getAll(repositoryDb, stagingDb, ids, listener);
+    }
+
+    @Override
+    public Iterator<RevObject> getAllPresentStagingOnly(final Iterable<ObjectId> ids,
+            final BulkOpListener listener) {
+        return stagingDb.getAll(ids, listener);
     }
 
     @Override

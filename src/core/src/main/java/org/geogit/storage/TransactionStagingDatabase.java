@@ -283,4 +283,9 @@ public class TransactionStagingDatabase implements StagingDatabase {
     public long deleteAll(Iterator<ObjectId> ids) {
         return deleteAll(ids, BulkOpListener.NOOP_LISTENER);
     }
+
+    @Override
+    public Iterator<RevObject> getAllPresentStagingOnly(Iterable<ObjectId> ids, BulkOpListener listener) {
+        return database.getAllPresentStagingOnly(ids, listener);
+    }
 }

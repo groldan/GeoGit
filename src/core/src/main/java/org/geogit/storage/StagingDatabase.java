@@ -4,10 +4,13 @@
  */
 package org.geogit.storage;
 
+import java.util.Iterator;
 import java.util.List;
 
 import javax.annotation.Nullable;
 
+import org.geogit.api.ObjectId;
+import org.geogit.api.RevObject;
 import org.geogit.api.plumbing.merge.Conflict;
 
 import com.google.common.base.Optional;
@@ -17,6 +20,30 @@ import com.google.common.base.Optional;
  * 
  */
 public interface StagingDatabase extends ObjectDatabase {
+
+    /**
+     * Query method to retrieve a collection of objects from the staging database <b>only</b>, given
+     * a collection of object identifiers.
+     * <p>
+     * This method is similar to {@link #getAll(Iterable, BulkOpListener)} but without the overhead
+     * of querying the {@link ObjectDatabase} for objects not found in the staging database.
+     * <p>
+     * The returned iterator may not preserve the order of the argument list of ids.
+     * <p>
+     * The {@link BulkOpListener#found(RevObject, Integer) listener.found} method is going to be
+     * called for each object found as the returned iterator is traversed.
+     * <p>
+     * The {@link BulkOpListener#notFound(ObjectId) listener.notFound} method is to be called for
+     * each object not found as the iterator is traversed.
+     * 
+     * @param ids an {@link Iterable} holding the list of ids to remove from the database
+     * @param listener a listener that gets notified of {@link BulkOpListener#deleted(ObjectId)
+     *        deleted} and {@link BulkOpListener#notFound(ObjectId) not found} items
+     * @return an iterator with the objects <b>found</b> on the staging database, in no particular
+     *         order
+     */
+    public Iterator<RevObject> getAllPresentStagingOnly(final Iterable<ObjectId> ids,
+            final BulkOpListener listener);
 
     /**
      * Gets the specified conflict from the database.
