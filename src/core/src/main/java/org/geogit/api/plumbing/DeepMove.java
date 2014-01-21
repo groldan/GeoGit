@@ -5,10 +5,11 @@
 
 package org.geogit.api.plumbing;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -26,6 +27,7 @@ import org.geogit.api.RevTree;
 import org.geogit.api.plumbing.LsTreeOp.Strategy;
 import org.geogit.repository.StagingArea;
 import org.geogit.storage.BulkOpListener;
+import org.geogit.storage.BulkOpListener.CountingListener;
 import org.geogit.storage.ObjectDatabase;
 import org.geogit.storage.StagingDatabase;
 import org.slf4j.Logger;
@@ -33,13 +35,11 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 
@@ -155,11 +155,11 @@ public class DeepMove extends AbstractGeoGitOp<ObjectId> {
     }
 
     private static class DeleteTask implements Runnable {
-        private List<ObjectId> ids;
+        private Collection<ObjectId> ids;
 
         private ObjectDatabase db;
 
-        public DeleteTask(List<ObjectId> ids, ObjectDatabase db) {
+        public DeleteTask(Collection<ObjectId> ids, ObjectDatabase db) {
             this.ids = ids;
             this.db = db;
         }
@@ -178,7 +178,7 @@ public class DeepMove extends AbstractGeoGitOp<ObjectId> {
 
         private final int limit = 1000 * 100;
 
-        final List<ObjectId> removeIds = Lists.newArrayListWithCapacity(limit);
+        private SortedSet<ObjectId> removeIds = Sets.newTreeSet();
 
         private ExecutorService deletingService;
 
@@ -199,14 +199,14 @@ public class DeepMove extends AbstractGeoGitOp<ObjectId> {
 
         public void deleteInserted() {
             if (!removeIds.isEmpty()) {
-                DeleteTask deleteTask = new DeleteTask(Lists.newArrayList(removeIds), db);
+                DeleteTask deleteTask = new DeleteTask(removeIds, db);
                 deletingService.execute(deleteTask);
-                removeIds.clear();
+                removeIds = Sets.newTreeSet();
             }
         }
     }
 
-    private void moveObjects(final ObjectDatabase from, final ObjectDatabase to,
+    private long moveObjects(final ObjectDatabase from, final ObjectDatabase to,
             final Supplier<Iterator<Node>> nodesToMove, final Set<ObjectId> metadataIds) {
 
         Iterable<ObjectId> ids = new Iterable<ObjectId>() {
@@ -232,19 +232,33 @@ public class DeepMove extends AbstractGeoGitOp<ObjectId> {
             }
         };
 
+        return moveObjects(ids, from, to);
+    }
+
+    private long moveObjects(Iterable<ObjectId> ids, final ObjectDatabase from,
+            final ObjectDatabase to) {
+
+        // store objects into the target db and remove them from the origin db in one shot
+        Iterator<RevObject> objects;
+        if (from instanceof StagingDatabase) {
+            objects = ((StagingDatabase) from).getAllPresentStagingOnly(ids,
+                    BulkOpListener.NOOP_LISTENER);
+        } else {
+            objects = from.getAllPresent(ids);
+        }
+
+        return moveObjects(objects, from, to);
+    }
+
+    private long moveObjects(Iterator<? extends RevObject> objects, final ObjectDatabase from,
+            final ObjectDatabase to) {
+
         final ExecutorService deletingService = Executors.newSingleThreadExecutor();
+        CountingListener countingListener = BulkOpListener.newCountingListener();
         try {
             final DeletingListener deletingListener = new DeletingListener(deletingService, from);
 
-            // store objects into the target db and remove them from the origin db in one shot
-            Iterator<RevObject> objects;
-            if (from instanceof StagingDatabase) {
-                objects = ((StagingDatabase) from).getAllPresentStagingOnly(ids,
-                        BulkOpListener.NOOP_LISTENER);
-            } else {
-                objects = from.getAllPresent(ids);
-            }
-            to.putAll(objects, deletingListener);
+            to.putAll(objects, BulkOpListener.composite(deletingListener, countingListener));
             // in case there are some deletes pending cause the iterator finished and the listener
             // didn't fill its buffer
             deletingListener.deleteInserted();
@@ -259,6 +273,7 @@ public class DeepMove extends AbstractGeoGitOp<ObjectId> {
                 }
             }
         }
+        return countingListener.inserted();
     }
 
     /**
@@ -301,24 +316,16 @@ public class DeepMove extends AbstractGeoGitOp<ObjectId> {
                 }, refs);
 
         // move all features, recursively as given by the LsTreeOp strategy
-        moveObjects(from, to, nodes, metadataIds);
-
-        // collect all subtree and bucket ids here to delete them from the origin db
-        final Set<ObjectId> alltreeIds = Sets.newTreeSet();
-        Predicate<RevTree> collectIds = new Predicate<RevTree>() {
-            @Override
-            public boolean apply(RevTree input) {
-                alltreeIds.add(input.getId());
-                return true;
-            }
-        };
+        Stopwatch sw = new Stopwatch().start();
+        long movedCount = moveObjects(from, to, nodes, metadataIds);
+        LOGGER.debug("{} features moved in {}", movedCount, sw.stop());
 
         // iterator that traverses the tree,all its subtrees, an bucket trees
-        Iterator<RevTree> allSubtreesAndBuckets = new AllTrees(treeId, from);
-        allSubtreesAndBuckets = Iterators.filter(allSubtreesAndBuckets, collectIds);
+        Iterator<RevTree> allTrees = new AllTrees(treeId, from);
 
-        to.putAll(allSubtreesAndBuckets);
-        from.deleteAll(alltreeIds.iterator());
+        sw.reset().start();
+        movedCount = moveObjects(allTrees, from, to);
+        LOGGER.debug("{} trees and buckets moved in {}", movedCount, sw.stop());
     }
 
     private static class AllTrees extends AbstractIterator<RevTree> {
