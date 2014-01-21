@@ -6,6 +6,8 @@ package org.geogit.api.plumbing;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 
 import org.geogit.api.AbstractGeoGitOp;
@@ -53,6 +55,20 @@ public class ResolveGeogitDir extends AbstractGeoGitOp<Optional<URL>> {
             throw Throwables.propagate(e);
         }
         return Optional.fromNullable(lookup);
+    }
+
+    public Optional<File> getFile() {
+        Optional<URL> url = call();
+        if (url.isPresent()) {
+            try {
+                if ("file".equalsIgnoreCase(url.get().getProtocol())) {
+                    return Optional.of(new File(url.get().toURI()));
+                }
+            } catch (Exception e) {
+                throw Throwables.propagate(e);
+            }
+        }
+        return Optional.absent();
     }
 
     /**

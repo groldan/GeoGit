@@ -39,34 +39,31 @@
       <groupId>net.sourceforge.findbugs</groupId>
       <artifactId>jsr305</artifactId>
     </dependency>
-    
+
     <!-- used to implement a point cache as a temporary database -->
     <dependency>
       <groupId>com.sleepycat</groupId>
       <artifactId>je</artifactId>
     </dependency>
-    
+
     <dependency>
-		<groupId>org.openstreetmap.osmosis</groupId>
-		<artifactId>osmosis-core</artifactId>
-		<version>${osmosis.version}</version>
-	</dependency>
-	<dependency>
-	  <groupId>org.openstreetmap.osmosis</groupId>
-	  <artifactId>osmosis-xml</artifactId>
-	  <version>${osmosis.version}</version>
-	</dependency>
-	<dependency>
-	  <groupId>org.openstreetmap.osmosis</groupId>
-	  <artifactId>osmosis-pbf</artifactId>
-	  <version>${osmosis.version}</version>
-	</dependency>
-	
+      <groupId>org.openstreetmap.osmosis</groupId>
+      <artifactId>osmosis-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.openstreetmap.osmosis</groupId>
+      <artifactId>osmosis-xml</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.openstreetmap.osmosis</groupId>
+      <artifactId>osmosis-pbf</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>com.google.inject</groupId>
       <artifactId>guice</artifactId>
     </dependency>
-    
+
     <!-- Test scope dependencies -->
     <dependency>
       <groupId>org.geogit</groupId>

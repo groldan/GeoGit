@@ -68,6 +68,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicates;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
@@ -478,8 +479,10 @@ public class WorkingTree {
 
         final RevTree origTree = treeRef.objectId().isNull() ? RevTree.EMPTY : indexDatabase
                 .getTree(treeRef.objectId());
+
+        Platform platform = commandLocator.getPlatform();
         RevTreeBuilder2 builder = new RevTreeBuilder2(indexDatabase, origTree,
-                treeRef.getMetadataId(), executorService);
+                treeRef.getMetadataId(), platform, executorService);
 
         List<Future<Integer>> insertBlobsFuture = insertBlobs(source, query, executorService,
                 listener, collectionSize, nFetchThreads, builder);
@@ -717,6 +720,7 @@ public class WorkingTree {
                     }
 
                 });
+        objects = Iterators.filter(objects, Predicates.notNull());
         try {
             listener.started();
             CountingListener countingListener = BulkOpListener.newCountingListener();

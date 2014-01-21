@@ -146,6 +146,7 @@
     <jts.version>1.13</jts.version>
     <junit.version>4.10</junit.version>
     <logback.version>1.0.13</logback.version>
+    <mapdb.version>0.9.8</mapdb.version>
     <mockito.version>1.9.5</mockito.version>
     <mockrunner.version>0.3.6</mockrunner.version>
     <neo4j.version>1.9.2</neo4j.version>
@@ -165,6 +166,12 @@
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <!-- off-heap, memory and file mapped support for large collections -->
+        <groupId>org.mapdb</groupId>
+        <artifactId>mapdb</artifactId>
+        <version>${mapdb.version}</version>
+      </dependency>
       <dependency>
         <groupId>com.google.inject</groupId>
         <artifactId>guice</artifactId>
@@ -260,6 +267,21 @@
         <artifactId>neo4j-kernel</artifactId>
         <version>${neo4j.version}</version>
         <type>test-jar</type>
+      </dependency>
+      <dependency>
+        <groupId>org.openstreetmap.osmosis</groupId>
+        <artifactId>osmosis-core</artifactId>
+        <version>${osmosis.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.openstreetmap.osmosis</groupId>
+        <artifactId>osmosis-xml</artifactId>
+        <version>${osmosis.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.openstreetmap.osmosis</groupId>
+        <artifactId>osmosis-pbf</artifactId>
+        <version>${osmosis.version}</version>
       </dependency>
 
       <!-- Berkeley DB JE -->

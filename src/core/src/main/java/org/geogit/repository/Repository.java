@@ -148,7 +148,7 @@ public class Repository implements CommandLocator {
     public <T extends AbstractGeoGitOp<?>> T command(Class<T> commandClass) {
         return injector.getInstance(commandClass);
     }
-
+    
     /**
      * @return the {@link WorkingTree} for this repository
      */

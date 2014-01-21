@@ -6,9 +6,16 @@ package org.geogit.api;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+
 import javax.annotation.Nullable;
 
 import org.geogit.api.RevObject.TYPE;
+import org.geogit.storage.NodeStorageOrder;
+import org.geogit.storage.datastream.FormatCommon;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -18,7 +25,11 @@ import com.vividsolutions.jts.geom.Envelope;
  * An identifier->object id mapping for an object
  * 
  */
-public abstract class Node implements Bounded, Comparable<Node> {
+public abstract class Node implements Bounded, Comparable<Node>, Externalizable {
+
+    private static final long serialVersionUID = 5592811321744429005L;
+
+    private static NodeStorageOrder comparator = new NodeStorageOrder();
 
     /**
      * The name of the element
@@ -35,6 +46,10 @@ public abstract class Node implements Bounded, Comparable<Node> {
      * Id of the object this ref points to
      */
     private ObjectId objectId;
+
+    private Node() {
+        //
+    }
 
     private Node(final String name, final ObjectId oid, final ObjectId metadataId) {
         checkNotNull(name);
@@ -73,7 +88,7 @@ public abstract class Node implements Bounded, Comparable<Node> {
      */
     @Override
     public int compareTo(Node o) {
-        return name.compareTo(o.getName());
+        return comparator.compare(this, o);
     }
 
     /**
@@ -149,6 +164,12 @@ public abstract class Node implements Bounded, Comparable<Node> {
 
     private static class TreeNode extends Node {
 
+        private static final long serialVersionUID = 6435967994347400157L;
+
+        private TreeNode() {
+            super();
+        }
+
         public TreeNode(String name, ObjectId oid, ObjectId mdid) {
             super(name, oid, mdid);
         }
@@ -161,8 +182,14 @@ public abstract class Node implements Bounded, Comparable<Node> {
 
     private static final class BoundedTreeNode extends TreeNode {
 
+        private static final long serialVersionUID = 5097735994611683172L;
+
         // dim0(0),dim0(1),dim1(0),dim1(1)
         private float[] bounds;
+
+        private BoundedTreeNode() {
+            super();
+        }
 
         public BoundedTreeNode(String name, ObjectId oid, ObjectId mdid, Envelope env) {
             super(name, oid, mdid);
@@ -202,6 +229,12 @@ public abstract class Node implements Bounded, Comparable<Node> {
 
     private static class FeatureNode extends Node {
 
+        private static final long serialVersionUID = -8709690147076317538L;
+
+        private FeatureNode() {
+            super();
+        }
+
         public FeatureNode(String name, ObjectId oid, ObjectId mdid) {
             super(name, oid, mdid);
         }
@@ -214,8 +247,14 @@ public abstract class Node implements Bounded, Comparable<Node> {
 
     private static final class BoundedFeatureNode extends FeatureNode {
 
+        private static final long serialVersionUID = 5916535459977041602L;
+
         // dim0(0),dim1(0),dim0(1),dim1(1)
         private float[] bounds;
+
+        private BoundedFeatureNode() {
+            super();
+        }
 
         public BoundedFeatureNode(String name, ObjectId oid, ObjectId mdid, Envelope env) {
             super(name, oid, mdid);
@@ -250,6 +289,26 @@ public abstract class Node implements Bounded, Comparable<Node> {
             if (bounds.length > 2) {
                 env.expandToInclude(bounds[2], bounds[3]);
             }
+        }
+    }
+
+    @Override
+    public void writeExternal(ObjectOutput out) throws IOException {
+        FormatCommon.writeNode(this, out);
+    }
+
+    @Override
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        Node n = FormatCommon.readNode(in);
+        this.name = n.name;
+        this.objectId = n.objectId;
+        this.metadataId = n.metadataId;
+        if (n instanceof BoundedFeatureNode) {
+            ((BoundedFeatureNode) this).bounds = ((BoundedFeatureNode) n).bounds;
+        } else if (n instanceof BoundedTreeNode) {
+            ((BoundedTreeNode) this).bounds = ((BoundedTreeNode) n).bounds;
+        } else {
+            throw new IllegalStateException("Unknown node type: " + n);
         }
     }
 }

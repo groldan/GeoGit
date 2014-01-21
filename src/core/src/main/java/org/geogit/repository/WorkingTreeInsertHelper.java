@@ -15,6 +15,7 @@ import org.geogit.api.CommandLocator;
 import org.geogit.api.Node;
 import org.geogit.api.NodeRef;
 import org.geogit.api.ObjectId;
+import org.geogit.api.Platform;
 import org.geogit.api.RevFeatureType;
 import org.geogit.api.RevObject;
 import org.geogit.api.RevObject.TYPE;
@@ -113,7 +114,8 @@ class WorkingTreeInsertHelper {
         ObjectId defaultMetadataId = treeRef.getMetadataId();
 
         RevTreeBuilder2 builder;
-        builder = new RevTreeBuilder2(indexDatabase, origTree, defaultMetadataId, executorService);
+        Platform platform = commandLocator.getPlatform();
+        builder = new RevTreeBuilder2(indexDatabase, origTree, defaultMetadataId, platform, executorService);
         return builder;
     }
 
