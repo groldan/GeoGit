@@ -92,6 +92,8 @@
   <logger name="org.geogit.api.porcelain" level="INFO" />
   <logger name="org.geogit.storage" level="INFO" />
   <logger name="org.geogit.remote" level="INFO" />
+  <logger name="org.geogit.osm" level="INFO" />
+  <logger name="org.geogit.geotools" level="INFO" />
   <logger name="org.geotools" level="WARN" />
 
   <root level="WARN">
