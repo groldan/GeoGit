@@ -658,7 +658,9 @@ public class GeogitCLI {
 
                 private final ConsoleReader console = getConsole();
 
-                private final NumberFormat fmt = NumberFormat.getPercentInstance();
+                private final NumberFormat percentFormat = NumberFormat.getPercentInstance();
+
+                private final NumberFormat numberFormat = NumberFormat.getIntegerInstance();
 
                 private final long delayNanos = TimeUnit.NANOSECONDS.convert(100,
                         TimeUnit.MILLISECONDS);
@@ -716,7 +718,11 @@ public class GeogitCLI {
                     if (description != null) {
                         cursorBuffer.write(description);
                     }
-                    cursorBuffer.write(fmt.format(percent / 100f));
+                    if (percent > 100) {
+                        cursorBuffer.write(numberFormat.format(percent));
+                    } else {
+                        cursorBuffer.write(percentFormat.format(percent / 100f));
+                    }
                     try {
                         console.redrawLine();
                         console.flush();
