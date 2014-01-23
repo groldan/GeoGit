@@ -19,4 +19,9 @@ final class InternalByteArrayOutputStream extends ByteArrayOutputStream {
     public int size() {
         return super.count;
     }
+
+    public InternalByteArrayOutputStream clear() {
+        super.reset();
+        return this;
+    }
 }
