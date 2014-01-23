@@ -9,7 +9,9 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
+import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.opengis.feature.FeatureFactory;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.openstreetmap.osmosis.core.domain.v0_6.CommonEntityData;
@@ -26,10 +28,14 @@ import com.vividsolutions.jts.geom.Point;
 
 public class EntityConverter {
 
+    /** Cached instance to avoid multiple factory lookups */
+    private static final FeatureFactory FEATURE_FACTORY = CommonFactoryFinder
+            .getFeatureFactory(null);
+
     public SimpleFeature toFeature(Entity entity, Geometry geom) {
 
         SimpleFeatureType ft = entity instanceof Node ? OSMUtils.nodeType() : OSMUtils.wayType();
-        SimpleFeatureBuilder builder = new SimpleFeatureBuilder(ft);
+        SimpleFeatureBuilder builder = new SimpleFeatureBuilder(ft, FEATURE_FACTORY);
 
         builder.set("visible", Boolean.TRUE); // TODO: Check this!
         builder.set("version", Integer.valueOf(entity.getVersion()));
