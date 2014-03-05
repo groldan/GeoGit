@@ -175,6 +175,6 @@ public class WriteBackTest extends Assert {
     }
 
     private Node blob(String path) {
-        return Node.create(path, ObjectId.forString(path), ObjectId.NULL, TYPE.FEATURE);
+        return Node.create(path, ObjectId.forString(path), ObjectId.NULL, TYPE.FEATURE, null);
     }
 }

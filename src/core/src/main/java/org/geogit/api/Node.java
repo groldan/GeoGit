@@ -116,6 +116,13 @@ public abstract class Node implements Bounded, Comparable<Node> {
         //
     }
 
+    /**
+     * @deprecated use {@link #create(String, ObjectId, ObjectId, TYPE, Envelope)} instead. This
+     *             method is deprecated because it leads to confusion on when the bounds (last
+     *             argument) should be provided, so we'll leave only the other more explicit factory
+     *             method to force you to think what you're doing
+     */
+    @Deprecated
     public static Node create(final String name, final ObjectId oid, final ObjectId metadataId,
             final RevObject.TYPE type) {
         return create(name, oid, metadataId, type, null);

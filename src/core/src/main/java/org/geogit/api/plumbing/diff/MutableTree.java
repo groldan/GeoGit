@@ -23,6 +23,7 @@ import org.geogit.api.ObjectId;
 import org.geogit.api.RevObject.TYPE;
 import org.geogit.api.RevTree;
 import org.geogit.api.RevTreeBuilder;
+import org.geogit.repository.SpatialOps;
 import org.geogit.storage.ObjectDatabase;
 
 import com.google.common.base.Function;
@@ -35,6 +36,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
+import com.vividsolutions.jts.geom.Envelope;
 
 /**
  * A mutable data structure representing the state of a tree and its subtrees
@@ -141,13 +143,20 @@ public class MutableTree implements Cloneable {
         List<NodeRef> refsByDepth = Lists.newArrayList(entries.values());
         Collections.sort(refsByDepth, DEEPEST_LAST_COMPARATOR);
 
-        MutableTree root = new MutableTree(Node.create(ROOT, rootId, ObjectId.NULL, TYPE.TREE));
+        Node rootNode = Node.create(ROOT, rootId, ObjectId.NULL, TYPE.TREE, null);
+        MutableTree root = new MutableTree(rootNode);
+
+        Envelope bounds = new Envelope();
 
         for (NodeRef entry : refsByDepth) {
             Node node = entry.getNode();
+            node.expand(bounds);
             String parentPath = entry.getParentPath();
             root.setChild(parentPath, node);
         }
+        // recreate root node with the appropriate bounds
+        rootNode = Node.create(ROOT, rootId, ObjectId.NULL, TYPE.TREE, bounds);
+        root.setNode(rootNode);
 
         return root;
     }
@@ -267,20 +276,28 @@ public class MutableTree implements Cloneable {
         RevTreeBuilder builder = tree.builder(target).clearSubtrees();
 
         for (MutableTree childTree : this.childTrees.values()) {
-            RevTree newChild = childTree.build(origin, target);
-            target.put(newChild);
-            Node oldNode = childTree.getNode();
-            String name = oldNode.getName();
-            ObjectId newObjectId = newChild.getId();
-            ObjectId metadataId = oldNode.getMetadataId().or(ObjectId.NULL);
-            Node newNode = Node.create(name, newObjectId, metadataId, TYPE.TREE);
+            String name;
+            ObjectId newObjectId;
+            ObjectId metadataId;
+            Envelope bounds;
+            {
+                RevTree newChild = childTree.build(origin, target);
+                target.put(newChild);
+                Node oldNode = childTree.getNode();
+                name = oldNode.getName();
+                newObjectId = newChild.getId();
+                metadataId = oldNode.getMetadataId().or(ObjectId.NULL);
+                bounds = SpatialOps.boundsOf(newChild);
+            }
+            Node newNode = Node.create(name, newObjectId, metadataId, TYPE.TREE, bounds);
             builder.put(newNode);
         }
         RevTree newTree = builder.build();
         if (!this.node.getObjectId().equals(newTree.getId())) {
             target.put(newTree);
+            Envelope bounds = SpatialOps.boundsOf(newTree);
             this.node = Node.create(node.getName(), newTree.getId(),
-                    node.getMetadataId().or(ObjectId.NULL), TYPE.TREE);
+                    node.getMetadataId().or(ObjectId.NULL), TYPE.TREE, bounds);
         }
 
         return newTree;

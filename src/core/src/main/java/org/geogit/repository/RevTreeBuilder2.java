@@ -153,7 +153,7 @@ class RevTreeBuilder2 {
      * {@link ObjectId#NULL NULL} ObjectId
      */
     public void removeFeature(String fid) {
-        Node node = Node.create(fid, ObjectId.NULL, ObjectId.NULL, TYPE.FEATURE);
+        Node node = Node.create(fid, ObjectId.NULL, ObjectId.NULL, TYPE.FEATURE, null);
         put(node);
     }
 

@@ -159,7 +159,7 @@ public class NodeRefTest {
     @Test
     public void testAccessorsAndConstructors() {
         Node node = Node.create("Points.1", ObjectId.forString("Points stuff"), ObjectId.NULL,
-                TYPE.FEATURE);
+                TYPE.FEATURE, null);
         NodeRef nodeRef = new NodeRef(node, "Points", ObjectId.NULL);
         assertEquals(node.getMetadataId(), Optional.absent());
         assertEquals(node.getName(), nodeRef.name());
@@ -173,11 +173,11 @@ public class NodeRefTest {
     @Test
     public void testIsEqual() {
         Node node = Node.create("Points.1", ObjectId.forString("Points stuff"), ObjectId.NULL,
-                TYPE.FEATURE);
+                TYPE.FEATURE, null);
         NodeRef nodeRef = new NodeRef(node, "Points", ObjectId.NULL);
         assertFalse(nodeRef.equals(node));
         Node node2 = Node.create("Lines.1", ObjectId.forString("Lines stuff"), ObjectId.NULL,
-                TYPE.FEATURE);
+                TYPE.FEATURE, null);
         NodeRef nodeRef2 = new NodeRef(node2, "Lines", ObjectId.NULL);
         NodeRef nodeRef3 = new NodeRef(node2, "Lines", ObjectId.forString("Lines stuff"));
         assertFalse(nodeRef.equals(nodeRef2));
@@ -188,7 +188,7 @@ public class NodeRefTest {
     @Test
     public void testNodeAndNodeRefToString() {
         Node node = Node.create("Points.1", ObjectId.forString("Points stuff"), ObjectId.NULL,
-                TYPE.FEATURE);
+                TYPE.FEATURE, null);
         NodeRef nodeRef = new NodeRef(node, "Points", ObjectId.NULL);
 
         String readableNode = nodeRef.toString();
@@ -200,11 +200,11 @@ public class NodeRefTest {
     @Test
     public void testCompareTo() {
         Node node = Node.create("Points.1", ObjectId.forString("Points stuff"), ObjectId.NULL,
-                TYPE.FEATURE);
+                TYPE.FEATURE, null);
         NodeRef nodeRef = new NodeRef(node, "Points", ObjectId.NULL);
         assertFalse(nodeRef.equals(node));
         Node node2 = Node.create("Lines.1", ObjectId.forString("Lines stuff"), ObjectId.NULL,
-                TYPE.FEATURE);
+                TYPE.FEATURE, null);
         NodeRef nodeRef2 = new NodeRef(node2, "Lines", ObjectId.NULL);
         assertTrue(nodeRef.compareTo(nodeRef2) > 0);
         assertTrue(nodeRef2.compareTo(nodeRef) < 0);

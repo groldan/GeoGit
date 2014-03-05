@@ -43,13 +43,13 @@ public abstract class RevTreeSerializationTest extends Assert {
     public void initialize() {
         ImmutableList<Node> features = ImmutableList.of(Node.create("foo",
                 ObjectId.forString("nodeid"), ObjectId.forString("metadataid"),
-                RevObject.TYPE.FEATURE));
+                RevObject.TYPE.FEATURE, null));
         ImmutableList<Node> spatialFeatures = ImmutableList.of(Node.create("foo",
                 ObjectId.forString("nodeid"), ObjectId.forString("metadataid"),
                 RevObject.TYPE.FEATURE, new Envelope(1, 2, 1, 2)));
         ImmutableList<Node> trees = ImmutableList.of(Node.create("bar",
                 ObjectId.forString("barnodeid"), ObjectId.forString("barmetadataid"),
-                RevObject.TYPE.TREE));
+                RevObject.TYPE.TREE, null));
         ImmutableList<Node> spatialTrees = ImmutableList.of(Node.create("bar",
                 ObjectId.forString("barnodeid"), ObjectId.forString("barmetadataid"),
                 RevObject.TYPE.TREE, new Envelope(1, 2, 1, 2)));

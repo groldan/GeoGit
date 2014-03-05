@@ -27,6 +27,7 @@ import org.geogit.api.plumbing.diff.DiffEntry;
 import org.geogit.api.plumbing.diff.MutableTree;
 import org.geogit.api.plumbing.diff.TreeDifference;
 import org.geogit.api.porcelain.CommitOp;
+import org.geogit.repository.SpatialOps;
 import org.geogit.storage.ObjectDatabase;
 import org.geogit.storage.StagingDatabase;
 import org.opengis.util.ProgressListener;
@@ -42,6 +43,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
+import com.vividsolutions.jts.geom.Envelope;
 
 /**
  * Creates a new root tree in the {@link ObjectDatabase object database} from the current index,
@@ -281,8 +283,9 @@ public class WriteTree2 extends AbstractGeoGitOp<ObjectId> {
             ignoreList.add(newPath);
             RevTree tree = applyChanges(leftTreeRef, rightTreeRef);
 
+            Envelope bounds = SpatialOps.boundsOf(tree);
             Node newTreeNode = Node.create(rightTreeRef.name(), tree.getId(),
-                    rightTreeRef.getMetadataId(), TYPE.TREE);
+                    rightTreeRef.getMetadataId(), TYPE.TREE, bounds);
 
             MutableTree leftRoot = treeDifference.getLeftTree();
             String parentPath = rightTreeRef.getParentPath();

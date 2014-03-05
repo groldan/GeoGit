@@ -158,7 +158,7 @@ public class MutableTreeTest extends Assert {
     }
 
     private Node treeNode(String name, ObjectId treeId, ObjectId metadataId) {
-        Node node = Node.create(name, treeId, metadataId, TYPE.TREE);
+        Node node = Node.create(name, treeId, metadataId, TYPE.TREE, null);
         return node;
     }
 

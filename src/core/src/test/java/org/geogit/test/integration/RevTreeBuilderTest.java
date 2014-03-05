@@ -25,6 +25,7 @@ import org.geogit.api.plumbing.FindTreeChild;
 import org.geogit.api.plumbing.LsTreeOp;
 import org.geogit.api.plumbing.diff.DepthTreeIterator;
 import org.geogit.api.plumbing.diff.DepthTreeIterator.Strategy;
+import org.geogit.repository.SpatialOps;
 import org.geogit.storage.NodeStorageOrder;
 import org.geogit.storage.ObjectDatabase;
 import org.junit.Test;
@@ -33,6 +34,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.vividsolutions.jts.geom.Envelope;
 
 public class RevTreeBuilderTest extends RepositoryTestCase {
 
@@ -155,7 +157,7 @@ public class RevTreeBuilderTest extends RepositoryTestCase {
                 }
                 String name = "Feature." + random;
                 ObjectId newid = ObjectId.forString(name + "changed");
-                Node ref = Node.create(name, newid, ObjectId.NULL, TYPE.FEATURE);
+                Node ref = Node.create(name, newid, ObjectId.NULL, TYPE.FEATURE, null);
                 randomEdits.put(random, ref);
             }
             RevTreeBuilder mutable = tree.builder(odb);
@@ -363,6 +365,24 @@ public class RevTreeBuilderTest extends RepositoryTestCase {
         assertEquals(expectedOrder, splitNodes);
     }
 
+    @Test
+    public void testResultingTreeBounds() throws Exception {
+        checkTreeBounds(10);
+        checkTreeBounds(100);
+        checkTreeBounds(1000);
+        checkTreeBounds(10 * 1000);
+        checkTreeBounds(100 * 1000);
+    }
+
+    private void checkTreeBounds(int size) {
+        RevTree tree;
+        Envelope bounds;
+        tree = tree(size).build();
+        bounds = SpatialOps.boundsOf(tree);
+        Envelope expected = new Envelope(0, size, 0, size);
+        assertEquals(expected, bounds);
+    }
+
     private List<Node> lstree(RevTree tree) {
         Iterator<NodeRef> refs = geogit.command(LsTreeOp.class)
                 .setReference(tree.getId().toString()).setStrategy(FEATURES_ONLY).call();
@@ -373,6 +393,14 @@ public class RevTreeBuilderTest extends RepositoryTestCase {
         return nodes;
     }
 
+    private RevTreeBuilder tree(int nfeatures) {
+        RevTreeBuilder b = new RevTreeBuilder(odb);
+        for (Node n : nodes(nfeatures)) {
+            b.put(n);
+        }
+        return b;
+    }
+
     private List<Node> nodes(int size) {
         List<Node> nodes = Lists.newArrayListWithCapacity(size);
         for (int i = 0; i < size; i++) {
@@ -381,10 +409,16 @@ public class RevTreeBuilderTest extends RepositoryTestCase {
         return nodes;
     }
 
+    /**
+     * @return a feature node named {@code i}, with
+     *         {@code id = ObjectId.forString(String.valueOf(i))}, null metadata id, and
+     *         {@code bounds = [i, i+1, i, i+1]}
+     */
     private static Node node(int i) {
         String key = String.valueOf(i);
         ObjectId oid = ObjectId.forString(key);
-        Node node = Node.create(key, oid, ObjectId.NULL, TYPE.FEATURE);
+        Envelope bounds = new Envelope(i, i + 1, i, i + 1);
+        Node node = Node.create(key, oid, ObjectId.NULL, TYPE.FEATURE, bounds);
         return node;
     }
 }

@@ -17,11 +17,13 @@ import org.geogit.api.plumbing.FindTreeChild;
 import org.geogit.api.plumbing.ResolveTreeish;
 import org.geogit.api.plumbing.RevObjectParse;
 import org.geogit.di.CanRunDuringConflict;
+import org.geogit.repository.SpatialOps;
 import org.geogit.repository.WorkingTree;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
+import com.vividsolutions.jts.geom.Envelope;
 
 /**
  * Returns the NodeRef corresponding to a given refspec, if available.
@@ -102,9 +104,10 @@ public class FeatureNodeRefFromRefspec extends AbstractGeoGitOp<Optional<NodeRef
         if (feature.isPresent()) {
             RevFeatureType featureType = getFeatureTypeFromRefSpec();
             RevFeature feat = feature.get();
-            return Optional.of(new NodeRef(Node.create(NodeRef.nodeFromPath(ref), feat.getId(),
-                    featureType.getId(), TYPE.FEATURE), NodeRef.parentPath(ref), featureType
-                    .getId()));
+            Envelope bounds = SpatialOps.boundsOf(feat);
+            Node node = Node.create(NodeRef.nodeFromPath(ref), feat.getId(), featureType.getId(),
+                    TYPE.FEATURE, bounds);
+            return Optional.of(new NodeRef(node, NodeRef.parentPath(ref), featureType.getId()));
 
         } else {
             return Optional.absent();

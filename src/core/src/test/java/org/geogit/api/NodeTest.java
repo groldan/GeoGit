@@ -22,7 +22,7 @@ public class NodeTest {
     @Test
     public void testNodeAccessorsAndConstructors() {
         ObjectId oid = ObjectId.forString("Points stuff");
-        Node node = Node.create("Points", oid, ObjectId.NULL, TYPE.TREE);
+        Node node = Node.create("Points", oid, ObjectId.NULL, TYPE.TREE, null);
         assertEquals(node.getMetadataId(), Optional.absent());
         assertEquals(node.getName(), "Points");
         assertEquals(node.getObjectId(), oid);
@@ -32,11 +32,11 @@ public class NodeTest {
     @Test
     public void testIsEqual() {
         Node node = Node.create("Points.1", ObjectId.forString("Points stuff"), ObjectId.NULL,
-                TYPE.FEATURE);
+                TYPE.FEATURE, null);
         Node node2 = Node.create("Lines.1", ObjectId.forString("Lines stuff"), ObjectId.NULL,
-                TYPE.FEATURE);
+                TYPE.FEATURE, null);
         Node node3 = Node.create("Lines.1", ObjectId.forString("Lines stuff"),
-                ObjectId.forString("Lines Stuff"), TYPE.TREE);
+                ObjectId.forString("Lines Stuff"), TYPE.TREE, null);
 
         assertFalse(node.equals("NotANode"));
         assertFalse(node.equals(node2));
@@ -47,7 +47,7 @@ public class NodeTest {
     @Test
     public void testToString() {
         Node node = Node.create("Points.1", ObjectId.forString("Points stuff"), ObjectId.NULL,
-                TYPE.FEATURE);
+                TYPE.FEATURE, null);
 
         String readableNode = node.toString();
         String expected = "FeatureNode[Points.1 -> " + node.getObjectId() + "]";
@@ -57,9 +57,9 @@ public class NodeTest {
     @Test
     public void testCompareTo() {
         Node node = Node.create("Points.1", ObjectId.forString("Points stuff"), ObjectId.NULL,
-                TYPE.FEATURE);
+                TYPE.FEATURE, null);
         Node node2 = Node.create("Lines.1", ObjectId.forString("Lines stuff"), ObjectId.NULL,
-                TYPE.FEATURE);
+                TYPE.FEATURE, null);
 
         assertTrue(node.compareTo(node2) > 0);
         assertTrue(node2.compareTo(node) < 0);

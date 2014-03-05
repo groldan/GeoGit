@@ -92,7 +92,7 @@ public class DepthSearchTest {
                 ObjectId fakeFeatureOId = ObjectId.forString(nodePath);
                 ObjectId fakeTypeOId = ObjectId.NULL;// forString(treePath);
                 subTreeBuilder.put(Node.create(singleNodeName, fakeFeatureOId, fakeTypeOId,
-                        TYPE.FEATURE));
+                        TYPE.FEATURE, null));
             }
         }
 

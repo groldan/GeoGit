@@ -184,7 +184,7 @@ public class TreeDifferenceTest extends Assert {
         if (metadataId == null) {
             metadataId = ObjectId.NULL;
         }
-        Node node = Node.create(name, treeId, metadataId, TYPE.TREE);
+        Node node = Node.create(name, treeId, metadataId, TYPE.TREE, null);
         return node;
     }
 

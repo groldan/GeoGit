@@ -190,7 +190,7 @@ public class DepthTreeIteratorTest extends Assert {
         for (int treeN = 0; treeN < numSubTrees; treeN++) {
             RevTree subtree = createFeaturesTree("subtree" + treeN, featuresPerSubtree).build();
             source.put(subtree);
-            builder.put(Node.create("subtree" + treeN, subtree.getId(), metadataId, TYPE.TREE));
+            builder.put(Node.create("subtree" + treeN, subtree.getId(), metadataId, TYPE.TREE, null));
         }
         return builder;
     }
@@ -206,7 +206,7 @@ public class DepthTreeIteratorTest extends Assert {
 
     private Node featureRef(String namePrefix, int i) {
         String name = namePrefix + String.valueOf(i);
-        Node ref = Node.create(name, ObjectId.forString(name), ObjectId.NULL, TYPE.FEATURE);
+        Node ref = Node.create(name, ObjectId.forString(name), ObjectId.NULL, TYPE.FEATURE, null);
         return ref;
     }
 

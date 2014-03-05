@@ -221,13 +221,8 @@ public class FormatCommon {
         final RevObject.TYPE contentType = RevObject.TYPE.valueOf(in.readByte());
         final Envelope bbox = readBBox(in);
         final Node node;
-        if (bbox == null || bbox.isNull()) {
-            node = Node.create(name, ObjectId.createNoClone(objectId),
-                    ObjectId.createNoClone(metadataId), contentType);
-        } else {
-            node = Node.create(name, ObjectId.createNoClone(objectId),
-                    ObjectId.createNoClone(metadataId), contentType, bbox);
-        }
+        node = Node.create(name, ObjectId.createNoClone(objectId),
+                ObjectId.createNoClone(metadataId), contentType, bbox);
         return node;
     }
 

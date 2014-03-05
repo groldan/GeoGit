@@ -64,7 +64,7 @@ public class CatObjectTest extends RepositoryTestCase {
         RevTreeBuilder rtb = new RevTreeBuilder(odb);
         for (int i = 0; i < numChildren; i++) {
             String key = FEATURE_PREFIX + i;
-            Node ref = Node.create(key, FAKE_ID, FAKE_ID, TYPE.FEATURE);
+            Node ref = Node.create(key, FAKE_ID, FAKE_ID, TYPE.FEATURE, null);
             rtb.put(ref);
         }
         return rtb.build();

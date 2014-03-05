@@ -426,7 +426,7 @@ public class RevTreeBuilder {
         if (!deletes.isEmpty()) {
             for (String delete : deletes) {
                 Integer bucketIndex = computeBucket(delete);
-                Node node = Node.create(delete, ObjectId.NULL, ObjectId.NULL, TYPE.FEATURE);
+                Node node = Node.create(delete, ObjectId.NULL, ObjectId.NULL, TYPE.FEATURE, null);
                 changesByBucket.put(bucketIndex, node);
             }
             deletes.clear();

@@ -28,6 +28,7 @@ import org.geogit.api.RevTreeImpl;
 import org.geogit.api.SymRef;
 import org.geogit.api.plumbing.LsTreeOp.Strategy;
 import org.geogit.api.plumbing.diff.MutableTree;
+import org.geogit.repository.SpatialOps;
 import org.geogit.storage.ObjectDatabase;
 import org.geogit.storage.StagingDatabase;
 import org.geogit.test.integration.RepositoryTestCase;
@@ -44,6 +45,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.io.ParseException;
 
 public class WriteTree2Test extends RepositoryTestCase {
@@ -697,7 +699,8 @@ public class WriteTree2Test extends RepositoryTestCase {
         String name = NodeRef.nodeFromPath(path);
         String parent = NodeRef.parentPath(path);
 
-        Node node = Node.create(name, treeId, metadataId, TYPE.TREE);
+        Envelope bounds = SpatialOps.boundsOf(fakenId);
+        Node node = Node.create(name, treeId, metadataId, TYPE.TREE, bounds);
         return new NodeRef(node, parent, ObjectId.NULL);
     }
 
@@ -719,9 +722,11 @@ public class WriteTree2Test extends RepositoryTestCase {
         } catch (ParseException e) {
             throw Throwables.propagate(e);
         }
-        RevFeature revFeature = new RevFeatureBuilder().build(feature);
+        RevFeature revFeature = RevFeatureBuilder.build(feature);
         db.put(revFeature);
-        return Node.create(id, revFeature.getId(), ObjectId.NULL, TYPE.FEATURE);
+        Envelope bounds = feature.geometry() == null ? null : feature.geometry()
+                .getEnvelopeInternal();
+        return Node.create(id, revFeature.getId(), ObjectId.NULL, TYPE.FEATURE, bounds);
     }
 
     private static ObjectId id(@Nullable String partialHash) {

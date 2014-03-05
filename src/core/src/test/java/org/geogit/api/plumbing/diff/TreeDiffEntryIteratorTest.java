@@ -298,16 +298,16 @@ public class TreeDiffEntryIteratorTest extends Assert {
         String path = NodeRef.nodeFromPath(fullPath);
         String parentPath = NodeRef.parentPath(fullPath);
         TYPE type = path.startsWith("tree") ? TYPE.TREE : TYPE.FEATURE;
-        NodeRef ref = new NodeRef(Node.create(path, objectId, ObjectId.NULL, type), parentPath,
-                ObjectId.NULL);
+        NodeRef ref = new NodeRef(Node.create(path, objectId, ObjectId.NULL, type, null),
+                parentPath, ObjectId.NULL);
         return ref;
     }
 
     private ImmutableSet<DiffEntry> diffSet(RevTree leftTree, RevTree rightTree) {
         NodeRef leftNodeRef = new NodeRef(Node.create("", leftTree.getId(), ObjectId.NULL,
-                TYPE.TREE), "", ObjectId.NULL);
+                TYPE.TREE, null), "", ObjectId.NULL);
         NodeRef rightNodeRef = new NodeRef(Node.create("", leftTree.getId(), ObjectId.NULL,
-                TYPE.TREE), "", ObjectId.NULL);
+                TYPE.TREE, null), "", ObjectId.NULL);
         boolean reportTrees = false;
         ImmutableSet<DiffEntry> diffset = ImmutableSet.copyOf(new TreeDiffEntryIterator(
                 leftNodeRef, rightNodeRef, leftTree, rightTree, reportTrees, true, mockDb));
