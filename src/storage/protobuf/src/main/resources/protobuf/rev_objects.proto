@@ -1,0 +1,25 @@
+package org.geogit.storage.protobuf;
+
+option optimize_for = SPEED;
+
+message Person {
+	optional string name = 1;
+    optional string email = 2;
+    required int64 timeStamp = 3;
+    required int32 timeZoneOffset = 4;
+}
+
+message Commit {
+    required bytes treeId = 1;
+    repeated bytes parentIds = 2;
+    required Person author = 3;
+    required Person committer = 4;
+    optional string message = 5;
+}
+
+message Tag {
+ 	required string name = 1;
+    required bytes commit = 2;
+    optional string message = 3;
+    required Person tagger = 4;
+}

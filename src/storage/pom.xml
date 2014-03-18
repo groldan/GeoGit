@@ -21,5 +21,6 @@
    <module>mongo</module>
    <module>neo4j</module>
    <module>sqlite</module>
+   <module>protobuf</module>
   </modules>
 </project>

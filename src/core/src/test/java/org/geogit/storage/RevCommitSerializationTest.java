@@ -19,6 +19,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -174,5 +175,26 @@ public abstract class RevCommitSerializationTest extends Assert {
         assertEquals(currentTime, cmtOut.getAuthor().getTimestamp());
         assertEquals(timeZoneOffset, cmtOut.getAuthor().getTimeZoneOffset());
 
+    }
+
+    @Test
+    public void testPerf() throws Exception {
+        final int nruns = 1000 * 5000;
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream(4096);
+        ObjectWriter<RevCommit> writer = factory.createObjectWriter(TYPE.COMMIT);
+        ObjectReader<RevCommit> reader = factory.createCommitReader();
+
+        Stopwatch sw = new Stopwatch().start();
+        for (int i = 0; i < nruns; i++) {
+            out.reset();
+            RevCommit commit = this.testCommit.build();// this.testCommit.setMessage(String.valueOf(i)).build();
+            writer.write(commit, out);
+
+            RevCommit read = reader.read(commit.getId(),
+                    new ByteArrayInputStream(out.toByteArray()));
+            assertEquals(commit, read);
+        }
+        System.err.printf("wrote and read %d commits in %s\n", nruns, sw.stop());
     }
 }
