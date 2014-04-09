@@ -6,8 +6,8 @@ package org.geogit.osm.internal;
 
 import java.util.Collection;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
@@ -41,7 +41,7 @@ public class EntityConverter {
         builder.set("version", Integer.valueOf(entity.getVersion()));
         builder.set("timestamp", Long.valueOf(entity.getTimestamp().getTime()));
         builder.set("changeset", Long.valueOf(entity.getChangesetId()));
-        String tags = OSMUtils.buildTagsString(entity.getTags());
+        Map<String, String> tags = OSMUtils.buildTagsMap(entity.getTags());
         builder.set("tags", tags);
         String user = entity.getUser().getName() + ":" + Integer.toString(entity.getUser().getId());
         builder.set("user", user);
@@ -49,7 +49,8 @@ public class EntityConverter {
             builder.set("location", geom);
         } else if (entity instanceof Way) {
             builder.set("way", geom);
-            String nodes = buildNodesString(((Way) entity).getWayNodes());
+            List<WayNode> wayNodes = ((Way) entity).getWayNodes();
+            long[] nodes = buildNodesArray(wayNodes);
             builder.set("nodes", nodes);
         } else {
             throw new IllegalArgumentException();
@@ -60,23 +61,21 @@ public class EntityConverter {
         return simpleFeature;
     }
 
-    protected String buildNodesString(List<WayNode> wayNodes) {
-        StringBuilder sb = new StringBuilder();
-        for (Iterator<WayNode> it = wayNodes.iterator(); it.hasNext();) {
-            WayNode node = it.next();
-            sb.append(Long.toString(node.getNodeId()));
-            if (it.hasNext()) {
-                sb.append(";");
-            }
+    protected long[] buildNodesArray(List<WayNode> wayNodes) {
+        long[] nodeIds = new long[wayNodes.size()];
+        for (int i = 0; i < wayNodes.size(); i++) {
+            WayNode node = wayNodes.get(i);
+            nodeIds[i] = node.getNodeId();
         }
-        return sb.toString();
-
+        return nodeIds;
     }
 
     /**
      * Converts a Feature to a OSM Entity
+     * 
      * @param feature the feature to convert
-     * @param replaceId. The changesetId to use in case the feature has a negative one indicating a temporary value
+     * @param replaceId. The changesetId to use in case the feature has a negative one indicating a
+     *        temporary value
      * @return
      */
     public Entity toEntity(SimpleFeature feature, Long changesetId) {
@@ -85,8 +84,8 @@ public class EntityConverter {
         long id = Long.parseLong(feature.getID());
         int version = ((Integer) feature.getAttribute("version")).intValue();
         Long changeset = (Long) feature.getAttribute("changeset");
-        if (changesetId != null && changeset < 0){
-        	changeset = changesetId;
+        if (changesetId != null && changeset < 0) {
+            changeset = changesetId;
         }
         Long milis = (Long) feature.getAttribute("timestamp");
         Date timestamp = new Date(milis);

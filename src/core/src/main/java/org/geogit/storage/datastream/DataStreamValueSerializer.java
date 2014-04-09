@@ -12,10 +12,12 @@ import java.math.BigInteger;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.geogit.storage.FieldType;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.Maps;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKBReader;
@@ -444,6 +446,37 @@ public class DataStreamValueSerializer {
                 java.sql.Timestamp timestamp = (java.sql.Timestamp) field;
                 data.writeLong(timestamp.getTime());
                 data.writeInt(timestamp.getNanos());
+            }
+        });
+        serializers.put(FieldType.MAP, new ValueSerializer() {
+            @Override
+            public Object read(DataInput in) throws IOException {
+                final int size = in.readInt();
+                Map<Object, Object> map = Maps.newHashMap();
+                for (int i = 0; i < size; i++) {
+                    byte fieldTag = in.readByte();
+                    FieldType fieldType = FieldType.valueOf(fieldTag);
+                    Object key = DataStreamValueSerializer.read(fieldType, in);
+
+                    fieldTag = in.readByte();
+                    fieldType = FieldType.valueOf(fieldTag);
+                    Object value = DataStreamValueSerializer.read(fieldType, in);
+
+                    map.put(key, value);
+                }
+                return map;
+            }
+
+            @Override
+            public void write(Object field, DataOutput data) throws IOException {
+                Map<Object, Object> map = (Map<Object, Object>) field;
+                data.writeInt(map.size());
+                for (Entry<Object, Object> e : map.entrySet()) {
+                    Optional<Object> key = Optional.of(e.getKey());
+                    Optional<Object> value = Optional.fromNullable(e.getValue());
+                    DataStreamValueSerializer.write(key, data);
+                    DataStreamValueSerializer.write(value, data);
+                }
             }
         });
     }

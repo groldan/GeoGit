@@ -46,7 +46,7 @@ public enum FieldType {
     DOUBLE_ARRAY(0x0F, 12, double[].class), //
     STRING_ARRAY(0x10, -1, String[].class), //
     POINT(0x11, 16, Point.class), //
-    LINESTRING(0x12, 18,  LineString.class), //
+    LINESTRING(0x12, 18, LineString.class), //
     POLYGON(0x13, 20, Polygon.class), //
     MULTIPOINT(0x14, 17, MultiPoint.class), //
     MULTILINESTRING(0x15, 19, MultiLineString.class), //
@@ -60,9 +60,11 @@ public enum FieldType {
     DATE(0x1D, 28, java.sql.Date.class), //
     TIME(0x1E, 29, java.sql.Time.class), //
     TIMESTAMP(0x1F, 30, java.sql.Timestamp.class), //
+    MAP(0x20, 31, java.util.Map.class), //
     UNKNOWN(-1, 25, null);
 
     private final byte tagValue;
+
     private final byte textTagValue;
 
     private final Class<?> binding;
@@ -116,7 +118,8 @@ public enum FieldType {
     }
 
     public static FieldType forBinding(Class<?> binding) {
-        if (binding == null) return NULL;
+        if (binding == null)
+            return NULL;
         // try a hash lookup first
         FieldType fieldType = BINDING_MAPPING.get(binding);
         if (fieldType != null) {

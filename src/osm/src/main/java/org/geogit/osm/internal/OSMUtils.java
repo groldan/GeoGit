@@ -7,10 +7,12 @@ package org.geogit.osm.internal;
 import java.io.File;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
 import org.geotools.data.DataUtilities;
+import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.referencing.CRS;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
@@ -21,6 +23,8 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.vividsolutions.jts.geom.LineString;
 
 public class OSMUtils {
 
@@ -44,7 +48,7 @@ public class OSMUtils {
 
     public synchronized static SimpleFeatureType nodeType() {
         if (NodeType == null) {
-            String typeSpec = "visible:Boolean,version:Integer,timestamp:java.lang.Long,tags:String,"
+            String typeSpec = "visible:Boolean,version:Integer,timestamp:java.lang.Long,tags:java.util.Map,"
                     + "changeset:java.lang.Long,user:String,location:Point:srid=4326";
             try {
                 SimpleFeatureType type = DataUtilities.createType(NAMESPACE,
@@ -63,14 +67,31 @@ public class OSMUtils {
 
     public synchronized static SimpleFeatureType wayType() {
         if (WayType == null) {
-            String typeSpec = "visible:Boolean,version:Integer,timestamp:java.lang.Long,tags:String,"
-                    + "changeset:java.lang.Long,user:String,nodes:String,way:LineString:srid=4326";
+            SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
+            builder.add("visible", Boolean.class);
+            builder.add("version", Integer.class);
+            builder.add("timestamp", Long.class);
+            builder.add("tags", java.util.Map.class);
+            builder.add("changeset", Long.class);
+            builder.add("user", String.class);
+            builder.add("nodes", long[].class);
             try {
-                SimpleFeatureType type = DataUtilities.createType(NAMESPACE,
-                        OSMUtils.WAY_TYPE_NAME, typeSpec);
-                boolean longitudeFirst = true;
-                CoordinateReferenceSystem forceLonLat = CRS.decode("EPSG:4326", longitudeFirst);
-                WayType = DataUtilities.createSubType(type, null, forceLonLat);
+                builder.add("way", LineString.class, CRS.decode("EPSG:4326", true));
+            } catch (Exception e) {
+                throw Throwables.propagate(e);
+            }
+            // String typeSpec =
+            // "visible:Boolean,version:Integer,timestamp:java.lang.Long,tags:String,"
+            // + "changeset:java.lang.Long,user:String,nodes:String,way:LineString:srid=4326";
+            try {
+                // SimpleFeatureType type = DataUtilities.createType(NAMESPACE,
+                // OSMUtils.WAY_TYPE_NAME, typeSpec);
+                // boolean longitudeFirst = true;
+                // CoordinateReferenceSystem forceLonLat = CRS.decode("EPSG:4326", longitudeFirst);
+                // WayType = DataUtilities.createSubType(type, null, forceLonLat);
+                builder.setNamespaceURI(NAMESPACE);
+                builder.setName(WAY_TYPE_NAME);
+                WayType = builder.buildFeatureType();
             } catch (Exception e) {
                 throw Throwables.propagate(e);
             }
@@ -101,6 +122,22 @@ public class OSMUtils {
             }
         }
         return sb.toString();
+    }
+
+    @Nullable
+    public static Map<String, String> buildTagsMap(Iterable<Tag> collection) {
+        Map<String, String> tags = Maps.newHashMap();
+        String key;
+        String value;
+        for (Tag e : collection) {
+            key = e.getKey();
+            if (key == null || key.isEmpty()) {
+                continue;
+            }
+            value = e.getValue();
+            tags.put(key, value);
+        }
+        return tags.isEmpty() ? null : tags;
     }
 
     public static Collection<Tag> buildTagsCollectionFromString(String tagsString) {
