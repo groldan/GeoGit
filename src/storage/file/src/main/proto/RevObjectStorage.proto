@@ -1,0 +1,164 @@
+package geogit;
+
+option java_package = "org.geogit.storage.file.proto";
+option java_outer_classname = "GeogitProtos";
+
+enum FieldType {
+	NULL = 					0;
+    BOOLEAN = 				1;
+    BYTE = 					2;
+    SHORT = 				3;
+    INTEGER = 				4;
+    LONG = 					5;
+    FLOAT = 				6;
+    DOUBLE = 				7;
+    STRING = 				8;
+    BOOLEAN_ARRAY = 		9;
+    BYTE_ARRAY = 			10;
+    SHORT_ARRAY = 			11;
+    INTEGER_ARRAY = 		12;
+    LONG_ARRAY = 			13;
+    FLOAT_ARRAY = 			14;
+    DOUBLE_ARRAY = 			15;
+    STRING_ARRAY = 			16;
+    POINT = 				17;
+    LINESTRING = 			18;
+    POLYGON = 				19;
+    MULTIPOINT = 			20;
+    MULTILINESTRING = 		21;
+    MULTIPOLYGON = 			22;
+    GEOMETRYCOLLECTION =	23;
+    GEOMETRY = 				24;
+    UUID = 					25;
+    BIG_INTEGER = 			26;
+    BIG_DECIMAL = 			27;
+    DATETIME = 				28;
+    DATE = 					29;
+    TIME = 					30;
+    TIMESTAMP = 			31;
+    UNKNOWN = 				-1;
+}
+
+message PersonProto {
+	optional string name = 1;
+	optional string email = 2;
+	required sint64 timeStamp = 3;
+	required sint32 timeZoneOffset = 4;
+}
+
+message RevObjectProto {
+	// Reserve field numbers 100 to 199 for extensions.
+    extensions 100 to 199;
+	enum Type {
+		COMMIT = 		0;
+		TREE = 			1;
+		FEATURE = 		2;
+		TAG = 			3;
+		FEATURETYPE =	4;
+	}
+	required Type type = 1;
+}
+
+message CommitProto {
+	extend RevObjectProto {
+		required CommitProto commit = 100;
+	}
+	required bytes treeId = 1;
+	repeated bytes parentIds = 2;
+	required PersonProto author = 3;
+	required PersonProto committer = 4;
+	optional string message = 5;
+}
+
+message TreeProto {
+	extend RevObjectProto {
+		required TreeProto tree = 101;
+	}
+	optional uint64 size = 1;
+	optional uint32 numTrees = 2;
+	optional Nodes trees = 3;
+	optional Nodes features = 4;
+	optional Buckets buckets = 5;
+
+	message Bounds {
+		//fixed to 9 decimal places <minx miny>[maxx maxy]
+		//can be two (for point) or four (for bbox) elements
+		repeated sint64 ordinates = 1 [packed=true];
+	}
+
+	message Nodes {
+		repeated uint32 names = 1 [packed=true]; //denotes entries in a string table
+		repeated bytes objectIds = 2;
+		repeated Bounds bounds = 3;
+		repeated bytes metadataIds = 4;
+	}
+
+	message Buckets {
+		repeated uint32 bucketIndexes = 1 [packed=true];
+		repeated bytes treeIds = 2;
+		repeated Bounds bounds = 3;
+	}
+}
+
+message TagProto {
+	extend RevObjectProto {
+		required TagProto tag = 102;
+	}
+	required string name = 1;
+    required bytes commitId = 2;
+    required PersonProto tagger = 3;
+    optional string message = 4;
+}
+
+message FeatureProto {
+	extend RevObjectProto {
+		required FeatureProto feature = 103;
+	}
+	repeated Value values = 1;
+	message Value {
+		required FieldType fieldType = 1;
+		optional bytes value = 2; //if encoded using the internal encoding
+		optional uint32 stringValue = 3; //if in a string table
+	}
+}
+
+message FeatureTypeProto {
+	extend RevObjectProto {
+		required FeatureTypeProto featureType = 104;
+	}
+	required Name name = 1;
+	repeated PropertyDescriptor properties = 5;
+
+	message Name {
+		optional string namespace = 1;
+		required string localName = 2;
+	}
+
+	message PropertyDescriptor {
+		required Name name = 1;
+		required PropertyType propertyType = 2;
+		optional bool nillable = 3;
+		optional uint32 minOccurs = 4;
+		optional uint32 maxOccurs = 5;
+	}
+
+	message PropertyType {
+		required Name name = 1;
+		required FieldType binding = 2;
+		optional string crsName = 3;
+		optional string crsWKT = 4;
+	}
+}
+
+message PageIndexEntry {
+	optional bytes fromId = 1;
+	optional bytes toId = 2;
+	required uint64 pageOffset = 3;
+	required uint32 pageSize = 4;
+}
+
+message Page {
+	repeated bytes objectIds = 1;
+	repeated uint32 blobOffsets = 3 [packed=true];
+	repeated string stringTable = 4;
+}

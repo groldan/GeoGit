@@ -16,6 +16,7 @@
   <name>Storage backends</name>
 
   <modules>
+   <module>file</module>
    <module>blueprints</module>
    <module>bdbje</module>
    <module>mongo</module>
