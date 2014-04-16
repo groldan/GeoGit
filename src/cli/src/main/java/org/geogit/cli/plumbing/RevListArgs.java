@@ -22,7 +22,7 @@ public class RevListArgs {
      * The commits to use for starting the list of output commits
      * 
      */
-    @Parameter(description = "<commit> <commit>...")
+    @Parameter(description = "< [<commit> ...]|[<since>..<until>]")
     public List<String> commits = new ArrayList<String>();
 
     @Parameter(names = { "--max-count", "-n" }, description = "Maximum number of commits to log.")

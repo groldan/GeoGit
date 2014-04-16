@@ -8,6 +8,7 @@ package org.geogit.cli.plumbing;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
 
 import jline.console.ConsoleReader;
 
@@ -29,6 +30,8 @@ import org.geotools.util.Range;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import com.google.common.base.Optional;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
 
 /**
  * Shows list of commits.
@@ -59,11 +62,43 @@ public class RevList extends AbstractCommand implements CLICommand {
                 .setFirstParentOnly(args.firstParent);
 
         for (String commit : args.commits) {
-            Optional<ObjectId> commitId = geogit.command(RevParse.class).setRefSpec(commit).call();
-            checkParameter(commitId.isPresent(), "Object not found '%s'", commit);
-            checkParameter(geogit.getRepository().commitExists(commitId.get()),
-                    "%s does not resolve to a commit", commit);
-            op.addCommit(commitId.get());
+            if (commit.contains("..")) {
+                checkParameter(args.commits.size() == 1,
+                        "Only one value accepted when using <since>..<until> syntax");
+                List<String> sinceUntil = ImmutableList.copyOf((Splitter.on("..").split(commit)));
+                checkParameter(sinceUntil.size() == 2 || sinceUntil.size() == 1,
+                        "Invalid refSpec format, expected [<commit> ...]|[<since>..<until>]: %s",
+                        commit);
+                String sinceRefSpec;
+                String untilRefSpec;
+                if (sinceUntil.size() == 1) {
+                    // just until was given
+                    sinceRefSpec = null;
+                    untilRefSpec = sinceUntil.get(0);
+                } else {
+                    sinceRefSpec = sinceUntil.get(0);
+                    untilRefSpec = sinceUntil.get(1);
+                }
+                if (sinceRefSpec != null) {
+                    Optional<ObjectId> since;
+                    since = geogit.command(RevParse.class).setRefSpec(sinceRefSpec).call();
+                    checkParameter(since.isPresent(), "Object not found '%s'", sinceRefSpec);
+                    op.setSince(since.get());
+                }
+                if (untilRefSpec != null) {
+                    Optional<ObjectId> until;
+                    until = geogit.command(RevParse.class).setRefSpec(untilRefSpec).call();
+                    checkParameter(until.isPresent(), "Object not found '%s'", sinceRefSpec);
+                    op.setUntil(until.get());
+                }
+            } else {
+                Optional<ObjectId> commitId = geogit.command(RevParse.class).setRefSpec(commit)
+                        .call();
+                checkParameter(commitId.isPresent(), "Object not found '%s'", commit);
+                checkParameter(geogit.getRepository().commitExists(commitId.get()),
+                        "%s does not resolve to a commit", commit);
+                op.addCommit(commitId.get());
+            }
         }
         if (args.author != null && !args.author.isEmpty()) {
             op.setAuthor(args.author);

@@ -211,6 +211,19 @@ public class DiffEntry {
         return Objects.equal(oldObject, de.oldObject) && Objects.equal(newObject, de.newObject);
     }
 
+    /**
+     * 
+     * @param target
+     */
+    public void expand (Envelope target){
+        if (oldObject != null) {
+                oldObject.expand(target);
+         }
+         if(newObject != null){
+                newObject.expand(target);
+         }
+        }
+        
     @Override
     public int hashCode() {
         return Objects.hashCode(oldObject, newObject);

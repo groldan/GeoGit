@@ -62,6 +62,8 @@ public class Tag extends AbstractCommand implements CLICommand {
                 "Too many parameters provided");
 
         if (nameAndCommit.isEmpty()) {
+            //looks like an attempt to create a tag with a message but forgot the tag name
+            checkParameter(message == null, "A tag name must be provided");
             listTags(cli);
             return;
         }

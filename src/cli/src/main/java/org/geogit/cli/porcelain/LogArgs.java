@@ -25,11 +25,11 @@ public class LogArgs {
     @Nullable
     public Integer skip;
 
-    @Parameter(names = "--since", description = "Show only commits since the specified 'since' commit")
+    @Parameter(names = "--since", description = "Show only commits since the specified 'since' date")
     @Nullable
     public String since;
 
-    @Parameter(names = "--until", description = "Show only commits until the specified 'until' commit")
+    @Parameter(names = "--until", description = "Show only commits until the specified 'until' date")
     @Nullable
     public String until;
 
@@ -44,15 +44,11 @@ public class LogArgs {
     @Parameter(names = "--oneline", description = "Print only commit id and message on a single line per commit")
     public boolean oneline;
 
-    @Parameter(description = "[[<until>]|[<since>..<until>]], arity = 1")
+    @Parameter(description = "[[<until>]|[<since>..<until>]]")
     public List<String> sinceUntilPaths = Lists.newArrayList();
 
     @Parameter(names = { "--path", "-p" }, description = "Print only commits that have modified the given path(s)", variableArity = true)
     public List<String> pathNames = Lists.newArrayList();
-
-    @Parameter(names = "--raw", description = "Show raw contents for commits")
-    @Nullable
-    public boolean raw;
 
     @Parameter(names = "--summary", description = "Show summary of changes for each commit")
     @Nullable
@@ -89,7 +85,7 @@ public class LogArgs {
     @Parameter(names = "--decoration", description = "Show reference names")
     @Nullable
     public boolean decoration;
-    
+
     @Parameter(names = "--utc", description = "Show date/time in UTC")
     @Nullable
     public boolean utcDateFormat;

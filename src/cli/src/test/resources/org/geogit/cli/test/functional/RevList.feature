@@ -3,6 +3,21 @@ Feature: "rev-list" command
     As a Geogit User
     I want to see a list of commits
   
+ Scenario: Try to show only a range of commits.
+    Given I have a repository
+      And I have several commits
+      And I run the command "rev-list HEAD~3..HEAD~1"
+     Then the response should not contain " Commit4"
+      And the response should not contain "Commit1"
+      And the response should contain "Commit2"
+      And the response should contain "Commit3" 
+      
+ Scenario: Try to show a range of commits and provide additional commits.
+    Given I have a repository
+      And I have several commits
+      And I run the command "rev-list HEAD~3..HEAD~1 HEAD~2"
+     Then the response should contain "Only one value accepted when using <since>..<until> syntax"
+             
   Scenario: Try to show a log of a repository with a single commit.
     Given I have a repository
       And I have staged "points1"
@@ -38,7 +53,7 @@ Feature: "rev-list" command
      Then the response should not contain " Commit1"
       And the response should not contain "Commit2"
       And the response should contain "Commit3"
-      And the response should contain "Commit4"
+      And the response should contain "Commit4"   
       
 Scenario: Try to get commits list without starting commit
     Given I have a repository
