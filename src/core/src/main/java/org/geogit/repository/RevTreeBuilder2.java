@@ -14,6 +14,7 @@ import javax.annotation.Nullable;
 
 import org.geogit.api.Node;
 import org.geogit.api.ObjectId;
+import org.geogit.api.Platform;
 import org.geogit.api.RevFeatureType;
 import org.geogit.api.RevFeatureTypeImpl;
 import org.geogit.api.RevObject.TYPE;
@@ -36,13 +37,11 @@ class RevTreeBuilder2 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RevTreeBuilder2.class);
 
-    private NodeIndex nodeIndex;
+    private final NodeIndex nodeIndex;
 
     private final ObjectDatabase db;
 
     private final RevTree original;
-
-    private final ExecutorService executorService;
 
     private final Map<Name, RevFeatureType> revFeatureTypes = Maps.newConcurrentMap();
 
@@ -52,12 +51,16 @@ class RevTreeBuilder2 {
      * Copy constructor
      */
     public RevTreeBuilder2(final ObjectDatabase db, @Nullable final RevTree origTree,
-            final ObjectId defaultMetadataId, final ExecutorService executorService) {
+            final ObjectId defaultMetadataId, final Platform platform,
+            final ExecutorService executorService) {
 
         this.db = db;
         this.original = origTree;
-        this.executorService = executorService;
         this.defaultMetadataId = defaultMetadataId;
+        // this.nodeIndex = new DBMapNodeIndex(platform);
+        // this.nodeIndex = new FileNodeIndex(platform, executorService);
+        this.nodeIndex = new MappedNodeIndex(platform, executorService);
+        // this.nodeIndex = new DBMapLongNodeIndex(platform);
     }
 
     public ObjectId getDefaultMetadataId() {
@@ -78,9 +81,6 @@ class RevTreeBuilder2 {
      */
     public synchronized RevTreeBuilder2 put(final Node node) {
         Preconditions.checkNotNull(node, "node can't be null");
-        if (this.nodeIndex == null) {
-            this.nodeIndex = new NodeIndex(executorService);
-        }
         nodeIndex.add(node);
         return this;
     }
@@ -110,6 +110,9 @@ class RevTreeBuilder2 {
                     builder.put(node);
                 }
             }
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            throw e;
         } finally {
             nodeIndex.close();
         }
