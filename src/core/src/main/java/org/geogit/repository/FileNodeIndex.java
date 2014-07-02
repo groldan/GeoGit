@@ -21,11 +21,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -33,11 +34,13 @@ import java.util.concurrent.Future;
 import org.geogit.api.Node;
 import org.geogit.api.Platform;
 import org.geogit.api.plumbing.ResolveGeogitDir;
+import org.geogit.storage.NodePathStorageOrder;
 import org.geogit.storage.NodeStorageOrder;
 import org.geogit.storage.datastream.FormatCommonV2;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
@@ -49,11 +52,11 @@ import com.ning.compress.lzf.LZFOutputStream;
 
 class FileNodeIndex implements Closeable, NodeIndex {
 
-    private static final int PARTITION_SIZE = 250 * 1000;
+    private static final int PARTITION_SIZE = 1000 * 1000;
 
     private static final class IndexPartition {
 
-        List<Node> cache = new ArrayList<Node>(PARTITION_SIZE);
+        private SortedMap<String, Node> cache = new TreeMap<>(new NodePathStorageOrder());
 
         private File tmpFolder;
 
@@ -62,16 +65,18 @@ class FileNodeIndex implements Closeable, NodeIndex {
         }
 
         public void add(Node node) {
-            cache.add(node);
+            cache.put(node.getName(), node);
         }
 
-        public List<Node> getSortedNodes() {
-            Collections.sort(cache, new NodeStorageOrder());
-            return cache;
+        public Iterable<Node> getSortedNodes() {
+            return cache.values();
         }
 
         public File flush() {
-            List<Node> cache = getSortedNodes();
+            System.err.printf("flushing %s\n", Thread.currentThread().getName());
+            Stopwatch s = Stopwatch.createStarted();
+            Iterable<Node> cache = getSortedNodes();
+            int count = 0;
             final File file;
             try {
                 file = File.createTempFile("geogitNodes", ".idx", tmpFolder);
@@ -93,14 +98,18 @@ class FileNodeIndex implements Closeable, NodeIndex {
                         }
                         int size = buf.size();
                         fileOut.write(buf.bytes(), 0, size);
+                        count++;
                     }
                 } finally {
-                    cache.clear();
+                    this.cache.clear();
+                    this.cache = null;
                     fileOut.close();
                 }
             } catch (Exception e) {
+                e.printStackTrace();
                 throw Throwables.propagate(e);
             }
+            System.err.printf("Flushed to %s in %s for %,d nodes\n", file, s.stop(), count);
             return file;
         }
     }
@@ -234,7 +243,7 @@ class FileNodeIndex implements Closeable, NodeIndex {
             Preconditions.checkArgument(file.exists(), "file %s does not exist", file);
             try {
                 if (this.in == null) {
-                    InputStream fin = new BufferedInputStream(new FileInputStream(file), 16 * 1024);
+                    InputStream fin = new BufferedInputStream(new FileInputStream(file), 64 * 1024);
                     fin = new LZFInputStream(fin);
                     this.in = new DataInputStream(fin);
                 }

@@ -10,15 +10,12 @@ import static com.google.common.collect.Iterators.filter;
 import static com.google.common.collect.Iterators.mergeSorted;
 import static com.google.common.collect.Iterators.transform;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInput;
-import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
@@ -34,8 +31,6 @@ import java.util.Random;
 import java.util.RandomAccess;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.geogit.api.Node;
 import org.geogit.api.Platform;
@@ -56,7 +51,7 @@ import com.google.common.io.Closeables;
 import com.google.common.primitives.UnsignedLong;
 import com.vividsolutions.jts.geom.Envelope;
 
-class MappedNodeIndex implements NodeIndex {
+class MappedNodeIndex2 implements NodeIndex {
 
     private static final Random RANDOM = new Random();
 
@@ -66,149 +61,7 @@ class MappedNodeIndex implements NodeIndex {
 
     private File parentDir;
 
-    private MappedData data;
-
     private MappedIndex index;
-
-    private static class MappedData {
-
-        private final NodeSerializer SERIALIZER = new NodeSerializer();
-
-        private File dataFile;
-
-        private RandomAccessFile randomAccessFile;
-
-        private FileChannel dataChannel;
-
-        private MappedByteBuffer dataBuffer;
-
-        private List<MappedByteBuffer> dataBuffers;
-
-        private ReadWriteLock lock = new ReentrantReadWriteLock();
-
-        public MappedData(File parentDir) throws IOException {
-            dataFile = new File(parentDir, "nodes.0");
-            dataFile.deleteOnExit();
-            checkState(dataFile.createNewFile());
-            randomAccessFile = new RandomAccessFile(dataFile, "rw");
-            dataChannel = randomAccessFile.getChannel();
-            dataBuffers = new ArrayList<MappedByteBuffer>(2);
-            newBuffer();
-        }
-
-        private void newBuffer() throws IOException {
-            long position = MAX_BUFF_SIZE * dataBuffers.size();
-            long size = MAX_BUFF_SIZE;
-            MappedByteBuffer buffer = dataChannel.map(MapMode.READ_WRITE, position, size);
-            dataBuffers.add(buffer);
-            this.dataBuffer = buffer;
-        }
-
-        public void close() {
-            try {
-                Closeables.close(dataChannel, true);
-                Closeables.close(randomAccessFile, true);
-            } catch (IOException e) {
-                //
-            }
-            dataBuffers.clear();
-            dataBuffer = null;
-            dataChannel = null;
-            dataFile.delete();
-        }
-
-        private boolean writing = true;
-
-        public long put(Node node) {
-            Preconditions.checkState(writing);
-            int buffOffset;
-            lock.writeLock().lock();
-            final int buffIdx;
-            try {
-                buffOffset = SERIALIZER.write(node, dataBuffer);
-            } catch (BufferOverflowException needAnewBuffer) {
-                try {
-                    dataBuffer.limit(dataBuffer.position());
-                    newBuffer();
-                    buffOffset = SERIALIZER.write(node, dataBuffer);
-                } catch (IOException e) {
-                    close();
-                    throw Throwables.propagate(e);
-                }
-            } finally {
-                buffIdx = dataBuffers.size() - 1;
-                lock.writeLock().unlock();
-            }
-            long offsetBase = buffIdx * MAX_BUFF_SIZE;
-            long offset = offsetBase + buffOffset;
-            return offset;
-        }
-
-        public Node nodeAtOffset(final long offset) {
-            lock.readLock().lock();
-            final ByteBuffer buffer;
-            final int buffOffset;
-            try {
-                if (writing) {
-                    this.dataBuffer.flip();
-                    writing = false;
-                }
-                final int bufferIndex = (int) (offset / MAX_BUFF_SIZE);
-                buffOffset = (int) (offset % MAX_BUFF_SIZE);
-                buffer = dataBuffers.get(bufferIndex);
-            } finally {
-                lock.readLock().unlock();
-            }
-
-            // use a view of the buffer to favor concurrency
-            ByteBuffer buff = buffer.duplicate();
-            buff.position(buffOffset);
-            Node node = SERIALIZER.read(buff);
-            return node;
-        }
-
-        private static class NodeSerializer {
-
-            private InternalByteArrayOutputStream outStream = new InternalByteArrayOutputStream(512);
-
-            private Envelope envbuff = new Envelope();
-
-            public synchronized int write(Node node, ByteBuffer buff) throws BufferOverflowException {
-                outStream.reset();
-                DataOutput out = new DataOutputStream(outStream);
-                try {
-                    FormatCommonV2.writeNode(node, out, envbuff);
-                } catch (IOException e) {
-                    throw Throwables.propagate(e);
-                }
-                final byte[] data = outStream.bytes();
-                final int size = outStream.size();
-
-                if (buff.remaining() < size) {
-                    throw new BufferOverflowException();
-                }
-
-                int offset = buff.position();
-                buff.putShort((short) size);
-                buff.put(data, 0, size);
-                return offset;
-            }
-
-            public Node read(ByteBuffer buff) {
-                final int size = buff.getShort();
-                byte[] data = new byte[size];
-                buff.get(data);
-                DataInput in = ByteStreams.newDataInput(data);
-                Node node;
-                try {
-                    node = FormatCommonV2.readNode(in);
-                } catch (IOException e) {
-                    throw Throwables.propagate(e);
-                }
-                return node;
-            }
-        }
-    }
 
     private static class MappedIndex {
 
@@ -259,9 +112,16 @@ class MappedNodeIndex implements NodeIndex {
             indexFile.delete();
         }
 
-        public void put(final String name, final long dataOffset) {
-            UnsignedLong nodeHashCode = nodeOrder.hashCodeLong(name);
-            put(new Entry(nodeHashCode, dataOffset));
+        public void put(final Node node) {
+            UnsignedLong nodeHashCode = nodeOrder.hashCodeLong(node.getName());
+            InternalByteArrayOutputStream out = new InternalByteArrayOutputStream(Entry.RECSIZE - 8);
+            try {
+                FormatCommonV2.writeNode(node, new DataOutputStream(out));
+            } catch (IOException e) {
+                throw Throwables.propagate(e);
+            }
+            byte[] nodePayload = out.bytes();
+            put(new Entry(nodeHashCode, nodePayload));
         }
 
         private synchronized void put(Entry entry) {
@@ -333,27 +193,21 @@ class MappedNodeIndex implements NodeIndex {
             index.rewind();
         }
 
-        public Iterator<Long> offsets() {
-            List<Iterator<Entry>> sortedEntriedByBuffer = new ArrayList<Iterator<Entry>>();
+        public Iterator<Entry> entries() {
+            List<Iterator<Entry>> sortedEntriesByBuffer = new ArrayList<Iterator<Entry>>();
 
             for (int bufferIndex = 0; bufferIndex < indexBuffers.size(); bufferIndex++) {
                 ByteBuffer buffer = indexBuffers.get(bufferIndex);
                 List<Iterator<Entry>> bufferOffsets = offsets(buffer);
-                sortedEntriedByBuffer.addAll(bufferOffsets);
+                sortedEntriesByBuffer.addAll(bufferOffsets);
             }
 
-            final Function<Entry, Long> offsets = new Function<Entry, Long>() {
-                @Override
-                public Long apply(Entry e) {
-                    return Long.valueOf(e.getOffset());
-                }
-            };
             Iterator<Entry> entriesSortedByHashcode;
-            entriesSortedByHashcode = mergeSorted(sortedEntriedByBuffer, Ordering.natural());
+            entriesSortedByHashcode = mergeSorted(sortedEntriesByBuffer, Ordering.natural());
             // ImmutableList<Entry> entries = ImmutableList.copyOf(entriesSortedByHashcode);
             // System.err.println(entries);
             // entriesSortedByHashcode = entries.iterator();
-            return transform(entriesSortedByHashcode, offsets);
+            return entriesSortedByHashcode;
         }
 
         private List<Iterator<Entry>> offsets(ByteBuffer buffer) {
@@ -450,23 +304,23 @@ class MappedNodeIndex implements NodeIndex {
 
         private static class Entry implements Comparable<Entry> {
 
-            public static final int RECSIZE = 16;// sizeOf(long) + sizeOf(long)
+            public static final int RECSIZE = 8 + 60;// sizeOf(long) + sizeOf(long)
 
             public final UnsignedLong hashCode;
 
-            public final long offset;
+            public final byte[] nodePayload;
 
-            public Entry(UnsignedLong nodeHashCode, long offset) {
+            public Entry(UnsignedLong nodeHashCode, byte[] node) {
                 this.hashCode = nodeHashCode;
-                this.offset = offset;
+                this.nodePayload = node;
             }
 
             public UnsignedLong getHashCode() {
                 return hashCode;
             }
 
-            public long getOffset() {
-                return offset;
+            public byte[] getNode() {
+                return nodePayload;
             }
 
             @Override
@@ -482,13 +336,13 @@ class MappedNodeIndex implements NodeIndex {
                     return false;
                 }
                 Entry e = (Entry) o;
-                return getHashCode() == e.getHashCode() && getOffset() == e.getOffset();
+                return getHashCode() == e.getHashCode() && getNode().equals(e.getNode());
             }
 
             @Override
             public String toString() {
-                return new StringBuilder("Entry[hash: ").append(getHashCode()).append(", offset: ")
-                        .append(getOffset()).append(']').toString();
+                return new StringBuilder("Entry[hash: ").append(getHashCode()).append(", ")
+                        .append(getNode()).append(']').toString();
             }
 
             public static void write(ByteBuffer buffer, Entry entry) {
@@ -496,20 +350,23 @@ class MappedNodeIndex implements NodeIndex {
                     throw new BufferOverflowException();
                 }
                 buffer.putLong(entry.getHashCode().longValue());
-                buffer.putLong(entry.getOffset());
+                byte[] nodePayload = entry.getNode();
+                Preconditions.checkState(nodePayload.length == Entry.RECSIZE - 8);
+                buffer.put(nodePayload);
             }
 
             public static Entry read(ByteBuffer buffer) {
                 long hashCode = buffer.getLong();
-                long offset = buffer.getLong();
                 UnsignedLong ulong = UnsignedLong.fromLongBits(hashCode);
-                return new Entry(ulong, offset);
-            }
 
+                byte[] payload = new byte[Entry.RECSIZE - 8];
+                buffer.get(payload);
+                return new Entry(ulong, payload);
+            }
         }
     }
 
-    public MappedNodeIndex(Platform platform, ExecutorService executor) {
+    public MappedNodeIndex2(Platform platform, ExecutorService executor) {
         this.executor = executor;
 
         final Optional<File> geogitDir = new ResolveGeogitDir(platform).getFile();
@@ -520,7 +377,6 @@ class MappedNodeIndex implements NodeIndex {
         this.parentDir.deleteOnExit();
 
         try {
-            this.data = new MappedData(parentDir);
             this.index = new MappedIndex(parentDir);
         } catch (IOException e) {
             throw Throwables.propagate(e);
@@ -535,20 +391,14 @@ class MappedNodeIndex implements NodeIndex {
         try {
             index.close();
         } finally {
-            try {
-                data.close();
-            } finally {
-                index = null;
-                data = null;
-            }
+            index = null;
         }
         parentDir.delete();
     }
 
     @Override
     public void add(Node node) {
-        long dataOffset = data.put(node);
-        index.put(node.getName(), dataOffset);
+        index.put(node);
     }
 
     @Override
@@ -556,15 +406,22 @@ class MappedNodeIndex implements NodeIndex {
 
         index.sort(executor);
 
-        Iterator<Long> offsets = index.offsets();
+        Iterator<MappedIndex.Entry> entries = index.entries();
 
-        Function<Long, Node> offsetNode = new Function<Long, Node>() {
+        Function<MappedIndex.Entry, Node> entryNode = new Function<MappedIndex.Entry, Node>() {
             @Override
-            public Node apply(Long offset) {
-                return data.nodeAtOffset(offset.longValue());
+            public Node apply(final MappedIndex.Entry entry) {
+                byte[] nodePayload = entry.getNode();
+                Node node;
+                try {
+                    node = FormatCommonV2.readNode(ByteStreams.newDataInput(nodePayload));
+                } catch (IOException e) {
+                    throw Throwables.propagate(e);
+                }
+                return node;
             }
         };
-        Iterator<Node> nodes = filter(transform(offsets, offsetNode), notNull());
+        Iterator<Node> nodes = filter(transform(entries, entryNode), notNull());
         return nodes;
     }
 
@@ -583,27 +440,45 @@ class MappedNodeIndex implements NodeIndex {
         }
     }
 
-    private static class ByteBufferDataInputAdapter extends InputStream {
+    private static class NodeSerializer {
 
-        private ByteBuffer byteBuff;
+        private InternalByteArrayOutputStream outStream = new InternalByteArrayOutputStream(512);
 
-        ByteBufferDataInputAdapter(ByteBuffer buff) {
-            this.byteBuff = buff;
-        }
+        private Envelope envbuff = new Envelope();
 
-        @Override
-        public int read() throws IOException {
-            return byteBuff.hasRemaining() ? (byteBuff.get() & 0xFF) : -1;
-        }
-
-        @Override
-        public int read(byte b[], int off, int len) throws IOException {
-            int readCount = -1;
-            if (byteBuff.hasRemaining()) {
-                readCount = Math.min(len, byteBuff.remaining());
-                byteBuff.get(b, off, readCount);
+        public synchronized int write(Node node, ByteBuffer buff) throws BufferOverflowException {
+            outStream.reset();
+            DataOutput out = new DataOutputStream(outStream);
+            try {
+                FormatCommonV2.writeNode(node, out, envbuff);
+            } catch (IOException e) {
+                throw Throwables.propagate(e);
             }
-            return readCount;
+            final byte[] data = outStream.bytes();
+            final int size = outStream.size();
+
+            if (buff.remaining() < size) {
+                throw new BufferOverflowException();
+            }
+
+            int offset = buff.position();
+            buff.putShort((short) size);
+            buff.put(data, 0, size);
+            return offset;
+        }
+
+        public Node read(ByteBuffer buff) {
+            final int size = buff.getShort();
+            byte[] data = new byte[size];
+            buff.get(data);
+            DataInput in = ByteStreams.newDataInput(data);
+            Node node;
+            try {
+                node = FormatCommonV2.readNode(in);
+            } catch (IOException e) {
+                throw Throwables.propagate(e);
+            }
+            return node;
         }
     }
 }

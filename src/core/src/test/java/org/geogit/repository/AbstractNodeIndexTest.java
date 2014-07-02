@@ -5,6 +5,7 @@
 package org.geogit.repository;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
@@ -38,7 +39,14 @@ public abstract class AbstractNodeIndexTest extends Assert {
     private static final MemoryMXBean MEMORY_MX_BEAN = ManagementFactory.getMemoryMXBean();
 
     @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
+    public TemporaryFolder tempFolder = new TemporaryFolder() {
+        public File newFolder() throws IOException {
+            File createdFolder = File.createTempFile("junit", "", new File("target"));
+            createdFolder.delete();
+            createdFolder.mkdir();
+            return createdFolder;
+        }
+    };
 
     private ExecutorService executorService;
 
@@ -123,7 +131,6 @@ public abstract class AbstractNodeIndexTest extends Assert {
         testNodes(1000 * 1000 * 10);
     }
 
-    @Ignore
     @Test
     public void test25M() throws Exception {
         testNodes(1000 * 1000 * 25);
