@@ -304,7 +304,7 @@ public class OSMImportOp extends AbstractGeoGigOp<Optional<OSMReport>> {
             workTree.delete(OSMUtils.WAY_TYPE_NAME);
         }
 
-        final int queueCapacity = 100 * 1000;
+        final int queueCapacity = 1000 * 1000;
         final int timeout = 1;
         final TimeUnit timeoutUnit = TimeUnit.SECONDS;
         // With this iterator and the osm parsing happening on a separate thread, we follow a

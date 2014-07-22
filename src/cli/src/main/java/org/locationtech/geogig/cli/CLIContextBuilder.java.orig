@@ -4,6 +4,7 @@
  */
 package org.locationtech.geogig.cli;
 
+<<<<<<< HEAD:src/cli/src/main/java/org/locationtech/geogig/cli/CLIContextBuilder.java
 import org.locationtech.geogig.api.Context;
 import org.locationtech.geogig.api.ContextBuilder;
 import org.locationtech.geogig.di.GeogigModule;
@@ -24,7 +25,6 @@ import org.locationtech.geogig.storage.bdbje.JEObjectDatabase_v0_2;
 import org.locationtech.geogig.storage.bdbje.JEStagingDatabase_v0_1;
 import org.locationtech.geogig.storage.bdbje.JEStagingDatabase_v0_2;
 import org.locationtech.geogig.storage.fs.FileRefDatabase;
-import org.locationtech.geogig.storage.fs.MappedStagingDatabase;
 import org.locationtech.geogig.storage.mongo.MongoGraphDatabase;
 import org.locationtech.geogig.storage.mongo.MongoObjectDatabase;
 import org.locationtech.geogig.storage.mongo.MongoStagingDatabase;
@@ -32,6 +32,36 @@ import org.locationtech.geogig.storage.sqlite.SQLiteStorage;
 import org.locationtech.geogig.storage.sqlite.XerialGraphDatabase;
 import org.locationtech.geogig.storage.sqlite.XerialObjectDatabase;
 import org.locationtech.geogig.storage.sqlite.XerialStagingDatabase;
+=======
+import org.geogit.api.Context;
+import org.geogit.api.ContextBuilder;
+import org.geogit.di.GeogitModule;
+import org.geogit.di.PluginDefaults;
+import org.geogit.di.PluginsModule;
+import org.geogit.di.VersionedFormat;
+import org.geogit.di.caching.CachingModule;
+import org.geogit.metrics.MetricsModule;
+import org.geogit.repository.Hints;
+import org.geogit.storage.GraphDatabase;
+import org.geogit.storage.ObjectDatabase;
+import org.geogit.storage.RefDatabase;
+import org.geogit.storage.StagingDatabase;
+import org.geogit.storage.bdbje.JEGraphDatabase_v0_1;
+import org.geogit.storage.bdbje.JEGraphDatabase_v0_2;
+import org.geogit.storage.bdbje.JEObjectDatabase_v0_1;
+import org.geogit.storage.bdbje.JEObjectDatabase_v0_2;
+import org.geogit.storage.bdbje.JEStagingDatabase_v0_1;
+import org.geogit.storage.bdbje.JEStagingDatabase_v0_2;
+import org.geogit.storage.fs.FileRefDatabase;
+import org.geogit.storage.fs.MappedStagingDatabase;
+import org.geogit.storage.mongo.MongoGraphDatabase;
+import org.geogit.storage.mongo.MongoObjectDatabase;
+import org.geogit.storage.mongo.MongoStagingDatabase;
+import org.geogit.storage.sqlite.SQLiteStorage;
+import org.geogit.storage.sqlite.XerialGraphDatabase;
+import org.geogit.storage.sqlite.XerialObjectDatabase;
+import org.geogit.storage.sqlite.XerialStagingDatabase;
+>>>>>>> temporary commit to use mapped staging database as default:src/cli/src/main/java/org/geogit/cli/CLIContextBuilder.java
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -113,7 +143,7 @@ public class CLIContextBuilder extends ContextBuilder {
 
             stagingPlugins //
                     .addBinding(new VersionedFormat("filedb", "2.0"))//
-                    .to(org.locationtech.geogig.storage.fs.mapped.MappedStagingDatabase.class)//
+                    .to(MappedStagingDatabase.class)//
                     .in(Scopes.SINGLETON);
 
             MapBinder<VersionedFormat, GraphDatabase> graphPlugins = MapBinder.newMapBinder(
