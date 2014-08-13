@@ -343,7 +343,7 @@ public abstract class RepositoryTestCase extends Assert {
     }
 
     public RevCommit commit(String message) {
-        RevCommit commit = geogit.command(CommitOp.class).setMessage(message).call();
+        RevCommit commit = geogig.command(CommitOp.class).setMessage(message).call();
         return commit;
     }
 

@@ -2,14 +2,14 @@
  * This code is licensed under the BSD New License, available at the root
  * application directory.
  */
-package org.geogit.api;
+package org.locationtech.geogig.api;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.geogit.storage.ObjectDatabase;
+import org.locationtech.geogig.storage.ObjectDatabase;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -115,7 +115,7 @@ public class HRPlusTree extends HRPlusTreeUtils {
      * 
      * @param env The bounding box we restrict results to.
      * @return A list of nodes within
-     * @param env}
+     * @param env
      */
     public List<HRPlusNode> query(Envelope env) {
         List<HRPlusNode> matches = new ArrayList<HRPlusNode>();
@@ -136,7 +136,7 @@ public class HRPlusTree extends HRPlusTreeUtils {
      * @param versionId The version of the tree we wish to search
      * @param env Bounding box
      * @return A list of nodes within
-     * @param env}
+     * @param env
      */
     public List<HRPlusNode> queryHistorical(ObjectId versionId, Envelope env) {
         // Give up if version doesn't exist
@@ -155,7 +155,7 @@ public class HRPlusTree extends HRPlusTreeUtils {
      * 
      * @param versionId A timestamp, may match a root of this tree.
      * @return boolean indicating whether there is a subtree associated with
-     * @param versionId}
+     * @param versionId
      */
     public boolean hasVersion(ObjectId versionId) {
         return this.rootMap.containsKey(versionId);
@@ -320,7 +320,7 @@ public class HRPlusTree extends HRPlusTreeUtils {
      * 
      * @param objectId Key for the lookup
      * @return the container associated with
-     * @param objectId}
+     * @param objectId
      */
     public HRPlusContainerNode lookupHRPlusContainerNode(ObjectId objectId) {
         // TODO unguarded cast
@@ -332,7 +332,7 @@ public class HRPlusTree extends HRPlusTreeUtils {
      * 
      * @param objectId Key for the lookup
      * @return node associated with
-     * @param objectId}
+     * @param objectId
      */
     public HRPlusNode lookupHRPlusNode(ObjectId objectId) {
         // TODO unguarded cast

@@ -2,7 +2,7 @@
  * This code is licensed under the BSD New License, available at the root
  * application directory.
  */
-package org.geogit.api;
+package org.locationtech.geogig.api;
 
 import java.util.ArrayList;
 import java.util.List;

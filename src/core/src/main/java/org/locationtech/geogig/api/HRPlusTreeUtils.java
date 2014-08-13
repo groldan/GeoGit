@@ -2,7 +2,7 @@
  * This code is licensed under the BSD New License, available at the root
  * application directory.
  */
-package org.geogit.api;
+package org.locationtech.geogig.api;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -60,7 +60,7 @@ public class HRPlusTreeUtils {
      * 
      * @param nodes list of nodes to create a bounding box for
      * @return envelope covering the bounding boxes of all nodes in
-     * @param nodes}
+     * @param nodes
      */
     protected static Envelope boundingBoxOf(List<HRPlusNode> nodes) {
         Envelope envelope = new Envelope();

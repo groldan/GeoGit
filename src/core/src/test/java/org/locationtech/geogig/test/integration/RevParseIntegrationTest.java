@@ -84,7 +84,8 @@ public class RevParseIntegrationTest extends RepositoryTestCase {
         masterCommit4 = commit("masterCommit4");
     }
 
-    private RevCommit commit(String message) {
+    @Override
+    public RevCommit commit(String message) {
         return geogig.command(CommitOp.class).setAllowEmpty(true).call();
     }
 
