@@ -126,7 +126,7 @@ public abstract class AbstractObjectDatabase implements ObjectDatabase {
         return get(id, reader, false);
     }
 
-    private <T extends RevObject> T get(final ObjectId id, final ObjectReader<T> reader,
+    protected <T extends RevObject> T get(final ObjectId id, final ObjectReader<T> reader,
             boolean failIfNotFound) {
         InputStream raw = getRaw(id, failIfNotFound);
         if (null == raw) {

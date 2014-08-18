@@ -19,5 +19,6 @@
    <module>bdbje</module>
    <module>mongo</module>
    <module>sqlite</module>
+   <module>s3</module>
   </modules>
 </project>
