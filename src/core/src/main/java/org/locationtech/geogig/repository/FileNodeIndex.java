@@ -11,7 +11,6 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.DataOutput;
@@ -49,6 +48,7 @@ import com.google.common.collect.UnmodifiableIterator;
 import com.google.common.io.Closeables;
 import com.ning.compress.lzf.LZFInputStream;
 import com.ning.compress.lzf.LZFOutputStream;
+import com.vividsolutions.jts.geom.Envelope;
 
 class FileNodeIndex implements Closeable, NodeIndex {
 
@@ -79,28 +79,19 @@ class FileNodeIndex implements Closeable, NodeIndex {
             try {
                 file = File.createTempFile("geogigNodes", ".idx", tmpFolder);
                 file.deleteOnExit();
-                // System.err.println("Created index file " + file.getAbsolutePath());
-                FastByteArrayOutputStream buf = new FastByteArrayOutputStream();
 
-                OutputStream fileOut = new BufferedOutputStream(new FileOutputStream(file),
-                        1024 * 1024);
-                fileOut = new LZFOutputStream(fileOut);
-                try {
+                try (OutputStream fileOut = new LZFOutputStream(new BufferedOutputStream(
+                        new FileOutputStream(file), 16 * 1024))) {
+
+                    DataOutput out = new DataOutputStream(fileOut);
+
+                    Envelope envHelper = new Envelope();
                     for (Node node : cache) {
-                        buf.reset();
-                        DataOutput out = new DataOutputStream(buf);
-                        try {
-                            FormatCommonV2.writeNode(node, out);
-                        } catch (IOException e) {
-                            throw Throwables.propagate(e);
-                        }
-                        int size = buf.size();
-                        fileOut.write(buf.bytes(), 0, size);
+                        FormatCommonV2.writeNode(node, out, envHelper);
                     }
                 } finally {
                     this.cache.clear();
                     this.cache = null;
-                    fileOut.close();
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -265,20 +256,4 @@ class FileNodeIndex implements Closeable, NodeIndex {
         }
 
     }
-
-    private static class FastByteArrayOutputStream extends ByteArrayOutputStream {
-
-        public FastByteArrayOutputStream() {
-            super(16 * 1024);
-        }
-
-        public int size() {
-            return super.count;
-        }
-
-        public byte[] bytes() {
-            return super.buf;
-        }
-    }
-
 }

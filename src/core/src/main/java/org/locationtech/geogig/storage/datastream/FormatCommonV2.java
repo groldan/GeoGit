@@ -55,6 +55,7 @@ import org.locationtech.geogig.api.RevTagImpl;
 import org.locationtech.geogig.api.RevTree;
 import org.locationtech.geogig.api.RevTreeImpl;
 import org.locationtech.geogig.api.plumbing.diff.DiffEntry;
+import org.locationtech.geogig.repository.SpatialOps;
 import org.locationtech.geogig.storage.FieldType;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
@@ -70,12 +71,14 @@ import org.opengis.referencing.NoSuchAuthorityCodeException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.math.DoubleMath;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.io.WKBWriter;
 
 public class FormatCommonV2 {
 
@@ -452,6 +455,8 @@ public class FormatCommonV2 {
 
     static final int METADATA_PRESENT_MASK = 0b100000;
 
+    static final int CACHEDGEOM_PRESENT_MASK = 0b1000000;
+
     static final int METADATA_ABSENT_MASK = 0b000000;
 
     static final int METADATA_READ_MASK = 0b100000;
@@ -465,11 +470,13 @@ public class FormatCommonV2 {
         // - bits 1-3 for the object type (up to 8 types, there are only 5 and no plans to add more)
         // - bits 4-5 bits for the bounds mask
         // - bit 6 metadata id present(1) or absent(0)
-        // - bits 7-8 unused
+        // - bit 7 has cached geometry(1) or not(0)
+        // - bit 8 unused
 
         final int nodeType = node.getType().value();
         final int boundsMask;
         final int metadataMask;
+        final int cachedGeomMask;
 
         env.setToNull();
         node.expand(env);
@@ -484,8 +491,10 @@ public class FormatCommonV2 {
         metadataMask = node.getMetadataId().isPresent() ? METADATA_PRESENT_MASK
                 : METADATA_ABSENT_MASK;
 
+        cachedGeomMask = node.getCachedGeometry() == null ? 0 : CACHEDGEOM_PRESENT_MASK;
+
         // encode type and bounds mask together
-        final int typeAndMasks = nodeType | boundsMask | metadataMask;
+        final int typeAndMasks = nodeType | boundsMask | metadataMask | cachedGeomMask;
 
         data.writeByte(typeAndMasks);
         data.writeUTF(node.getName());
@@ -498,13 +507,19 @@ public class FormatCommonV2 {
         } else if (BOUNDS_POINT_MASK == boundsMask) {
             writePointBoundingBox(env.getMinX(), env.getMinY(), data);
         }
+        if (cachedGeomMask == CACHEDGEOM_PRESENT_MASK) {
+            Geometry cachedGeometry = node.getCachedGeometry();
+            byte[] geomBytes = new WKBWriter().write(cachedGeometry);
+            DataStreamValueSerializerV2.write(Optional.<Object> of(geomBytes), data);
+        }
     }
 
-    public static Node readNode(DataInput in) throws IOException {
+    public static Node readNode(final DataInput in) throws IOException {
         final int typeAndMasks = in.readByte() & 0xFF;
         final int nodeType = typeAndMasks & TYPE_READ_MASK;
         final int boundsMask = typeAndMasks & BOUNDS_READ_MASK;
         final int metadataMask = typeAndMasks & METADATA_READ_MASK;
+        final int cachedGeomMask = typeAndMasks & CACHEDGEOM_PRESENT_MASK;
 
         final RevObject.TYPE contentType = RevObject.TYPE.valueOf(nodeType);
         final String name = in.readUTF();
@@ -529,6 +544,20 @@ public class FormatCommonV2 {
         }
         final Node node;
         node = Node.create(name, objectId, metadataId, contentType, bbox);
+
+        if (cachedGeomMask == CACHEDGEOM_PRESENT_MASK) {
+            Supplier<Geometry> supp = new Supplier<Geometry>() {
+
+                final byte[] geomBytes = (byte[]) DataStreamValueSerializerV2.read(
+                        FieldType.BYTE_ARRAY, in);
+
+                @Override
+                public Geometry get() {
+                    return SpatialOps.readWKB(geomBytes);
+                }
+            };
+            node.setCachedGeometry(supp);
+        }
         return node;
     }
 
