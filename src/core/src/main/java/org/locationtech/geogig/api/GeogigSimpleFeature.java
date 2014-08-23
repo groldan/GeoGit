@@ -161,14 +161,19 @@ public class GeogigSimpleFeature implements SimpleFeature {
 
     @Override
     public Object getAttribute(int index) throws IndexOutOfBoundsException {
-        if (node != null && index == defaultGeomIndex && defaultGeomIsPoint
+        if (node != null && index == defaultGeomIndex  
                 && (resolvedValues == null || resolvedValues instanceof ImmutableList)) {
-            Envelope e = new Envelope();
-            node.expand(e);
-            if (e.isNull()) {
-                return null;
+            Geometry cachedGeometry = node.getCachedGeometry();
+            if (cachedGeometry != null) {
+                return cachedGeometry;
+            }else if(defaultGeomIsPoint){
+              Envelope e = new Envelope();
+              node.expand(e);
+              if (e.isNull()) {
+                  return null;
+              }
+              return DEFAULT_GEOM_FACTORY.createPoint(new Coordinate(e.getMinX(), e.getMinY()));
             }
-            return DEFAULT_GEOM_FACTORY.createPoint(new Coordinate(e.getMinX(), e.getMinY()));
         }
         return getValues().get(index).orNull();
     }
@@ -206,19 +211,7 @@ public class GeogigSimpleFeature implements SimpleFeature {
     public Object getDefaultGeometry() {
         // should be specified in the index as the default key (null)
         Integer idx = nameToRevTypeIndex.get(null);
-        List<Optional<Object>> values = getValues();
-        Object defaultGeometry = idx != null ? values.get(idx).orNull() : null;
-
-        // not found? do we have a default geometry at all?
-        if (defaultGeometry == null) {
-            GeometryDescriptor geometryDescriptor = featureType.getGeometryDescriptor();
-            if (geometryDescriptor != null) {
-                Integer defaultGeomIndex = nameToRevTypeIndex.get(geometryDescriptor.getName()
-                        .getLocalPart());
-                defaultGeometry = values.get(defaultGeomIndex.intValue()).get();
-            }
-        }
-
+        Object defaultGeometry = idx == null ? null : getAttribute(idx.intValue());
         return defaultGeometry;
     }
 

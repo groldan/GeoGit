@@ -35,6 +35,7 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.vividsolutions.jts.geom.Envelope;
+import com.vividsolutions.jts.geom.Geometry;
 
 class RevTreeBuilder2 {
 
@@ -139,7 +140,9 @@ class RevTreeBuilder2 {
     }
 
     public Node putFeature(final ObjectId id, final String name,
-            @Nullable final BoundingBox bounds, final FeatureType type) {
+            @Nullable final BoundingBox bounds, final FeatureType type,
+            final @Nullable Geometry defaultGeometry) {
+
         Envelope bbox;
         if (bounds == null) {
             bbox = null;
@@ -156,7 +159,11 @@ class RevTreeBuilder2 {
         }
         ObjectId metadataId = revFeatureType.getId().equals(defaultMetadataId) ? ObjectId.NULL
                 : revFeatureType.getId();
+
         Node node = Node.create(name, id, metadataId, TYPE.FEATURE, bbox);
+        if (defaultGeometry != null && defaultGeometry.getNumPoints() <= 1000) {
+            node.setCachedGeometry(defaultGeometry);
+        }
         put(node);
         return node;
     }

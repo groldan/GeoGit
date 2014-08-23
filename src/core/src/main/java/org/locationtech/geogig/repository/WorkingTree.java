@@ -63,6 +63,7 @@ import org.locationtech.geogig.storage.BulkOpListener;
 import org.locationtech.geogig.storage.BulkOpListener.CountingListener;
 import org.locationtech.geogig.storage.StagingDatabase;
 import org.opengis.feature.Feature;
+import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.type.FeatureType;
 import org.opengis.feature.type.Name;
 import org.opengis.filter.Filter;
@@ -84,6 +85,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.vividsolutions.jts.geom.CoordinateSequenceFactory;
 import com.vividsolutions.jts.geom.Envelope;
+import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.impl.PackedCoordinateSequenceFactory;
 
 /**
@@ -621,7 +623,10 @@ public class WorkingTree {
                             BoundingBox bounds = feature.getBounds();
                             FeatureType type = feature.getType();
 
-                            builder.putFeature(id, name, bounds, type);
+                            Geometry defaultGeometry = (Geometry) ((SimpleFeature) feature)
+                                    .getDefaultGeometry();
+
+                            builder.putFeature(id, name, bounds, type, defaultGeometry);
                             return revFeature;
                         }
 

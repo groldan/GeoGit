@@ -22,6 +22,10 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.io.ByteOrderValues;
+import com.vividsolutions.jts.io.ParseException;
+import com.vividsolutions.jts.io.WKBReader;
+import com.vividsolutions.jts.io.WKBWriter;
 
 /**
  * Utility methods to deal with various spatial operations
@@ -30,6 +34,10 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 public class SpatialOps {
 
     private static final GeometryFactory gfac = new GeometryFactory();
+
+    public static GeometryFactory getDefaultGeometryFactory() {
+        return gfac;
+    }
 
     /**
      * @param oldObject
@@ -106,5 +114,20 @@ public class SpatialOps {
             }
         }
         return env;
+    }
+
+    public static Geometry readWKB(byte[] bytes) {
+        WKBReader wkbReader = new WKBReader(SpatialOps.getDefaultGeometryFactory());
+        try {
+            return wkbReader.read(bytes);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static byte[] writeWKB(Geometry field) {
+        WKBWriter wkbWriter = new WKBWriter(2, ByteOrderValues.BIG_ENDIAN, false);
+        byte[] bytes = wkbWriter.write(field);
+        return bytes;
     }
 }

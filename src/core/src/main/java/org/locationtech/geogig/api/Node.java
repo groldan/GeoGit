@@ -15,7 +15,10 @@ import org.locationtech.geogig.api.RevObject.TYPE;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.vividsolutions.jts.geom.Envelope;
+import com.vividsolutions.jts.geom.Geometry;
 
 /**
  * An identifier->object id mapping for an object
@@ -38,6 +41,8 @@ public abstract class Node implements Bounded, Comparable<Node> {
      * Id of the object this ref points to
      */
     private ObjectId objectId;
+
+    private Supplier<Geometry> cachedGeometry;
 
     private Node(final String name, final ObjectId oid, final ObjectId metadataId) {
         checkNotNull(name);
@@ -107,6 +112,23 @@ public abstract class Node implements Bounded, Comparable<Node> {
     public String toString() {
         return new StringBuilder(getClass().getSimpleName()).append('[').append(getName())
                 .append(" -> ").append(getObjectId()).append(']').toString();
+    }
+
+    public @Nullable Geometry getCachedGeometry() {
+        Supplier<Geometry> supplier = this.cachedGeometry;
+        return supplier == null ? null : cachedGeometry.get();
+    }
+
+    public void setCachedGeometry(@Nullable Geometry geom) {
+        if (geom == null) {
+            this.cachedGeometry = null;
+        } else {
+            setCachedGeometry(Suppliers.ofInstance(geom));
+        }
+    }
+
+    public void setCachedGeometry(Supplier<Geometry> supp) {
+        this.cachedGeometry = supp;
     }
 
     @Override

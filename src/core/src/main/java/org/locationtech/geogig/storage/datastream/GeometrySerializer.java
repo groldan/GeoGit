@@ -38,6 +38,9 @@ class GeometrySerializer implements ValueSerializer {
     private static final GeometrySerializer DEFAULT_PRECISION = new GeometrySerializer(
             DEFAULT_GEOMETRY_FACTORY);
 
+    private static final GeometrySerializer DEFAULT_PRECISION_FOR_NODECACHE = new GeometrySerializer(
+            new GeometryFactory(new PrecisionModel(1e5), 0, DEFAULT_COORDINATE_SEQUENCE_FACTORY));
+
     private GeometryFactory factory;
 
     GeometrySerializer(GeometryFactory factory) {
@@ -45,6 +48,10 @@ class GeometrySerializer implements ValueSerializer {
     }
 
     public static GeometrySerializer defaultInstance() {
+        return DEFAULT_PRECISION_FOR_NODECACHE;
+    }
+
+    public static GeometrySerializer defaultCachedNodeInstance() {
         return DEFAULT_PRECISION;
     }
 

@@ -28,6 +28,7 @@ import org.locationtech.geogig.api.plumbing.FindOrCreateSubtree;
 import org.locationtech.geogig.api.plumbing.FindTreeChild;
 import org.locationtech.geogig.storage.ObjectDatabase;
 import org.opengis.feature.Feature;
+import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.type.FeatureType;
 import org.opengis.geometry.BoundingBox;
 
@@ -37,6 +38,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.vividsolutions.jts.geom.Envelope;
+import com.vividsolutions.jts.geom.Geometry;
 
 class WorkingTreeInsertHelper {
 
@@ -74,7 +76,8 @@ class WorkingTreeInsertHelper {
         BoundingBox bounds = feature.getBounds();
         FeatureType type = feature.getType();
 
-        final Node node = treeBuilder.putFeature(revFeatureId, fid, bounds, type);
+        Geometry defaultGeom =(Geometry) ((SimpleFeature)feature).getDefaultGeometry();
+        final Node node = treeBuilder.putFeature(revFeatureId, fid, bounds, type, defaultGeom);
         return node;
     }
 

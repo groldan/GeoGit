@@ -11,10 +11,7 @@ import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -34,11 +31,18 @@ import org.locationtech.geogig.storage.NodeStorageOrder;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
+import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.PrecisionModel;
 
 public abstract class AbstractNodeIndexTest extends Assert {
     private static final MemoryMXBean MEMORY_MX_BEAN = ManagementFactory.getMemoryMXBean();
+
+    private static final GeometryFactory GF = new GeometryFactory(new PrecisionModel(
+            PrecisionModel.FLOATING_SINGLE));
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -175,28 +179,44 @@ public abstract class AbstractNodeIndexTest extends Assert {
 
     private void testOrder(final int count) throws Exception {
 
-        List<Node> expected = new ArrayList<Node>(count);
+        Stopwatch sw = Stopwatch.createStarted();
         for (int i = 0; i < count; i++) {
             Node node = node(i);
             index.add(node);
-            expected.add(node);
         }
-        Collections.sort(expected, new NodeStorageOrder());
-
+        System.err.printf("%,d nodes addded to index in %s\n", count, sw);
+        Ordering<Node> order = new NodeStorageOrder();
+        Node prev = null;
         Iterator<Node> nodeIterator = index.nodes();
-        List<Node> actual = Lists.newArrayList(nodeIterator);
-
-        assertEquals(expected.size(), actual.size());
-        for (int i = 0; i < expected.size(); i++) {
-            Node expectedNode = expected.get(i);
-            Node actualNode = actual.get(i);
-            assertEquals("At index " + i, expectedNode, actualNode);
+        int index = 0;
+        sw.reset().start();
+        while (nodeIterator.hasNext()) {
+            Node curr = nodeIterator.next();
+            assertNotNull("At index " + index, curr.getCachedGeometry());
+            if (prev != null) {
+                assertTrue("At index " + index, order.min(prev, curr) == prev);
+            }
+            index++;
+            prev = curr;
         }
+        System.err.printf("Verified order of %,d nodes in %s\n", index, sw.stop());
+        assertEquals(count, index);
     }
 
     private Node node(int i) {
         String name = String.valueOf(i);
-        return Node.create(name, ObjectId.forString(name), ObjectId.NULL, TYPE.FEATURE,
-                new Envelope(i, i + 1, i, i + 1));
+        Geometry geom;
+        if (i % 2 == 0) {
+            geom = GF.createLineString(new Coordinate[] { new Coordinate(i, i),
+                    new Coordinate(i + 1, i + 1) });
+        } else {
+            geom = GF.createPoint(new Coordinate(i, i));
+        }
+        Envelope bounds = geom.getEnvelopeInternal();
+
+        Node node = Node
+                .create(name, ObjectId.forString(name), ObjectId.NULL, TYPE.FEATURE, bounds);
+        node.setCachedGeometry(geom);
+        return node;
     }
 }

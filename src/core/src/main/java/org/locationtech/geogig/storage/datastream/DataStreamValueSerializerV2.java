@@ -23,13 +23,11 @@ import java.util.Date;
 import java.util.EnumMap;
 import java.util.Map;
 
+import org.locationtech.geogig.repository.SpatialOps;
 import org.locationtech.geogig.storage.FieldType;
 
 import com.google.common.base.Optional;
 import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.io.ParseException;
-import com.vividsolutions.jts.io.WKBReader;
-import com.vividsolutions.jts.io.WKBWriter;
 
 /**
  * A class to serializer/deserialize attribute values to/from a data stream
@@ -316,18 +314,12 @@ class DataStreamValueSerializerV2 {
             @Override
             public Object read(DataInput in) throws IOException {
                 byte[] bytes = (byte[]) byteArray.read(in);
-                WKBReader wkbReader = new WKBReader();
-                try {
-                    return wkbReader.read(bytes);
-                } catch (ParseException e) {
-                    throw new RuntimeException(e);
-                }
+                return SpatialOps.readWKB(bytes);
             }
 
             @Override
             public void write(Object field, DataOutput data) throws IOException {
-                WKBWriter wkbWriter = new WKBWriter();
-                byte[] bytes = wkbWriter.write((Geometry) field);
+                byte[] bytes = SpatialOps.writeWKB((Geometry) field);
                 byteArray.write(bytes, data);
             }
         };
