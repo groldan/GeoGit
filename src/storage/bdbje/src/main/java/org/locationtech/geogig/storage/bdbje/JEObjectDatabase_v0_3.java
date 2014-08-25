@@ -9,21 +9,21 @@ package org.locationtech.geogig.storage.bdbje;
 
 import org.locationtech.geogig.repository.Hints;
 import org.locationtech.geogig.storage.ConfigDatabase;
-import org.locationtech.geogig.storage.datastream.DataStreamSerializationFactoryV2;
+import org.locationtech.geogig.storage.datastream.DataStreamSerializationFactoryV3;
 
 import com.google.inject.Inject;
 
-public final class JEObjectDatabase_v0_2 extends JEObjectDatabase {
+public final class JEObjectDatabase_v0_3 extends JEObjectDatabase {
     @Inject
-    public JEObjectDatabase_v0_2(final ConfigDatabase configDB,
+    public JEObjectDatabase_v0_3(final ConfigDatabase configDB,
             final EnvironmentBuilder envProvider, final Hints hints) {
         this(configDB, envProvider, hints.getBoolean(Hints.OBJECTS_READ_ONLY),
                 JEObjectDatabase.ENVIRONMENT_NAME);
     }
 
-    public JEObjectDatabase_v0_2(final ConfigDatabase configDB,
+    public JEObjectDatabase_v0_3(final ConfigDatabase configDB,
             final EnvironmentBuilder envProvider, final boolean readOnly, final String envName) {
-        super(DataStreamSerializationFactoryV2.INSTANCE, configDB, envProvider, readOnly, envName,
-                "0.2");
+        super(DataStreamSerializationFactoryV3.INSTANCE, configDB, envProvider, readOnly, envName,
+                "0.3");
     }
 }

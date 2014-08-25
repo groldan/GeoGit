@@ -16,13 +16,13 @@ import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.inject.Inject;
 
-public final class JEStagingDatabase_v0_2 extends JEStagingDatabase {
+public final class JEStagingDatabase_v0_3 extends JEStagingDatabase {
     @Inject
-    public JEStagingDatabase_v0_2(final ObjectDatabase repositoryDb,
+    public JEStagingDatabase_v0_3(final ObjectDatabase repositoryDb,
             final EnvironmentBuilder envBuilder, final Platform platform,
             final ConfigDatabase configDB, final Hints hints) {
         super(repositoryDb, stagingDbSupplier(envBuilder, configDB, hints), platform, configDB,
-                "0.2");
+                "0.3");
     }
 
     private static Supplier<JEObjectDatabase> stagingDbSupplier(
@@ -32,7 +32,7 @@ public final class JEStagingDatabase_v0_2 extends JEStagingDatabase {
             public JEObjectDatabase get() {
                 boolean readOnly = hints.getBoolean(Hints.STAGING_READ_ONLY);
                 envBuilder.setIsStagingDatabase(true);
-                JEObjectDatabase db = new JEObjectDatabase_v0_2(configDB, envBuilder, readOnly,
+                JEObjectDatabase db = new JEObjectDatabase_v0_3(configDB, envBuilder, readOnly,
                         JEStagingDatabase.ENVIRONMENT_NAME);
                 return db;
             }

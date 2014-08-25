@@ -28,14 +28,6 @@ import com.vividsolutions.jts.geom.Geometry;
  */
 class DataStreamValueSerializerV1 {
 
-    static interface ValueSerializer {
-
-        public Object read(DataInput in) throws IOException;
-
-        public void write(Object obj, DataOutput out) throws IOException;
-
-    }
-
     static final Map<FieldType, ValueSerializer> serializers = new EnumMap<>(FieldType.class);
     static {
         serializers.put(FieldType.NULL, new ValueSerializer() {

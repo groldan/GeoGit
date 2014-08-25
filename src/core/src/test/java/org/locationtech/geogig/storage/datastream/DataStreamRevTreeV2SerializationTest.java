@@ -10,7 +10,7 @@ package org.locationtech.geogig.storage.datastream;
 import org.locationtech.geogig.storage.ObjectSerializingFactory;
 import org.locationtech.geogig.storage.RevTreeSerializationTest;
 
-public class DataStreamV2RevTreeSerializationTest extends RevTreeSerializationTest {
+public class DataStreamRevTreeV2SerializationTest extends RevTreeSerializationTest {
     @Override
     protected ObjectSerializingFactory getObjectSerializingFactory() {
         return new DataStreamSerializationFactoryV2();
