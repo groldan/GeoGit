@@ -8,11 +8,13 @@
 package org.locationtech.geogig.storage.datastream;
 
 import org.locationtech.geogig.storage.ObjectSerializingFactory;
-import org.locationtech.geogig.storage.RevFeatureSerializationTest;
+import org.locationtech.geogig.storage.RevCommitSerializationTest;
 
-public class DataStreamFeatureSerializationTest extends RevFeatureSerializationTest {
+public class DataStreamCommitV1SerializationTest extends RevCommitSerializationTest {
+
     @Override
     protected ObjectSerializingFactory getObjectSerializingFactory() {
         return new DataStreamSerializationFactoryV1();
     }
+
 }

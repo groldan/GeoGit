@@ -9,7 +9,6 @@ package org.locationtech.geogig.storage.bdbje;
 
 import org.locationtech.geogig.api.Platform;
 import org.locationtech.geogig.repository.Hints;
-import org.locationtech.geogig.repository.RepositoryConnectionException;
 import org.locationtech.geogig.storage.ConfigDatabase;
 import org.locationtech.geogig.storage.ObjectDatabase;
 
@@ -22,7 +21,8 @@ public final class JEStagingDatabase_v0_1 extends JEStagingDatabase {
     public JEStagingDatabase_v0_1(final ObjectDatabase repositoryDb,
             final EnvironmentBuilder envBuilder, final Platform platform,
             final ConfigDatabase configDB, final Hints hints) {
-        super(repositoryDb, stagingDbSupplier(envBuilder, configDB, hints), platform, configDB);
+        super(repositoryDb, stagingDbSupplier(envBuilder, configDB, hints), platform, configDB,
+                "0.1");
     }
 
     private static Supplier<JEObjectDatabase> stagingDbSupplier(
@@ -37,15 +37,5 @@ public final class JEStagingDatabase_v0_1 extends JEStagingDatabase {
                 return db;
             }
         });
-    }
-
-    @Override
-    public void configure() throws RepositoryConnectionException {
-        RepositoryConnectionException.StorageType.STAGING.configure(configDB, "bdbje", "0.1");
-    }
-
-    @Override
-    public void checkConfig() throws RepositoryConnectionException {
-        RepositoryConnectionException.StorageType.STAGING.verify(configDB, "bdbje", "0.1");
     }
 }
