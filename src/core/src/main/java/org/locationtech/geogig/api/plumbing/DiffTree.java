@@ -162,6 +162,41 @@ public class DiffTree extends AbstractGeoGigOp<Iterator<DiffEntry>> implements
         return call();
     }
 
+    public void call(Consumer consumer) {
+        checkNotNull(consumer, "consumer version not specified");
+        checkNotNull(oldRefSpec, "old version not specified");
+        checkNotNull(newRefSpec, "new version not specified");
+        final RevTree oldTree = resolveTree(oldRefSpec);
+        final RevTree newTree = resolveTree(newRefSpec);
+
+        if (oldTree.equals(newTree)) {
+            return;
+        }
+
+        ObjectDatabase leftSource = resolveSource(oldTree.getId());
+        ObjectDatabase rightSource = resolveSource(newTree.getId());
+        final DiffTreeVisitor visitor = new DiffTreeVisitor(oldTree, newTree, leftSource,
+                rightSource);
+
+        if (customFilter != null) {// evaluated the latest
+            consumer = new DiffTreeVisitor.FilteringConsumer(consumer, customFilter);
+        }
+        if (changeTypeFilter != null) {
+            consumer = new ChangeTypeFilteringDiffConsumer(changeTypeFilter, consumer);
+        }
+        if (boundsFilter != null) {
+            consumer = new BoundsFilteringDiffConsumer(boundsFilter, consumer, stagingDatabase());
+        }
+        if (!pathFilters.isEmpty()) {// evaluated the former
+            consumer = new PathFilteringDiffConsumer(pathFilters, consumer);
+        }
+        try {
+            visitor.walk(consumer);
+        } catch (RuntimeException e) {
+            LOGGER.error("Error traversing diffs", e);
+        }
+    }
+
     /**
      * Finds differences between the two specified trees.
      * 
