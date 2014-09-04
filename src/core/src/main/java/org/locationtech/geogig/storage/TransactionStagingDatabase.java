@@ -26,6 +26,7 @@ import org.locationtech.geogig.api.RevTree;
 import org.locationtech.geogig.api.plumbing.TransactionBegin;
 import org.locationtech.geogig.api.plumbing.TransactionEnd;
 import org.locationtech.geogig.api.plumbing.merge.Conflict;
+import org.locationtech.geogig.repository.Hints;
 
 import com.google.common.base.Optional;
 
@@ -116,12 +117,17 @@ public class TransactionStagingDatabase implements StagingDatabase {
         return database.get(id, type);
     }
 
+    @Override
+    public <T extends RevObject> T get(ObjectId id, Class<T> type, Hints hints)
+            throws IllegalArgumentException {
+        return database.get(id, type, hints);
+    }
+
     /**
      * Pass through to the original {@link StagingDatabase}.
      */
     @Override
-    public @Nullable
-    RevObject getIfPresent(ObjectId id) {
+    public @Nullable RevObject getIfPresent(ObjectId id) {
         return database.getIfPresent(id);
     }
 
@@ -129,10 +135,9 @@ public class TransactionStagingDatabase implements StagingDatabase {
      * Pass through to the original {@link StagingDatabase}.
      */
     @Override
-    public @Nullable
-    <T extends RevObject> T getIfPresent(ObjectId id, Class<T> type)
+    public @Nullable RevObject getIfPresent(ObjectId id, Hints hints)
             throws IllegalArgumentException {
-        return database.getIfPresent(id, type);
+        return database.getIfPresent(id, hints);
     }
 
     /**

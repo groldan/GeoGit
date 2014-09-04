@@ -17,6 +17,7 @@ import org.locationtech.geogig.api.RevFeatureType;
 import org.locationtech.geogig.api.RevObject;
 import org.locationtech.geogig.api.RevTag;
 import org.locationtech.geogig.api.RevTree;
+import org.locationtech.geogig.repository.Hints;
 import org.locationtech.geogig.repository.RepositoryConnectionException;
 
 import com.google.inject.Provider;
@@ -75,14 +76,19 @@ public class ForwardingObjectDatabase implements ObjectDatabase {
     }
 
     @Override
+    public <T extends RevObject> T get(ObjectId id, Class<T> type, Hints hints) throws IllegalArgumentException {
+        return subject.get().get(id, type, hints);
+    }
+
+    @Override
     public RevObject getIfPresent(ObjectId id) {
         return subject.get().getIfPresent(id);
     }
 
     @Override
-    public <T extends RevObject> T getIfPresent(ObjectId id, Class<T> type)
+    public RevObject getIfPresent(ObjectId id, Hints hints)
             throws IllegalArgumentException {
-        return subject.get().getIfPresent(id, type);
+        return subject.get().getIfPresent(id, hints);
     }
 
     @Override

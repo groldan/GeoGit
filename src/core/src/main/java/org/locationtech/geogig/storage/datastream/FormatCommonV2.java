@@ -55,6 +55,7 @@ import org.locationtech.geogig.api.RevTagImpl;
 import org.locationtech.geogig.api.RevTree;
 import org.locationtech.geogig.api.RevTreeImpl;
 import org.locationtech.geogig.api.plumbing.diff.DiffEntry;
+import org.locationtech.geogig.repository.Hints;
 import org.locationtech.geogig.storage.FieldType;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
@@ -298,14 +299,14 @@ public class FormatCommonV2 {
         }
     }
 
-    public static RevFeature readFeature(ObjectId id, DataInput in) throws IOException {
+    public static RevFeature readFeature(ObjectId id, DataInput in, Hints hints) throws IOException {
         final int count = readUnsignedVarInt(in);
         final ImmutableList.Builder<Optional<Object>> builder = ImmutableList.builder();
 
         for (int i = 0; i < count; i++) {
             final byte fieldTag = in.readByte();
             final FieldType fieldType = FieldType.valueOf(fieldTag);
-            Object value = DataStreamValueSerializerV2.read(fieldType, in);
+            Object value = DataStreamValueSerializerV2.read(fieldType, in, hints);
             builder.add(Optional.fromNullable(value));
         }
 

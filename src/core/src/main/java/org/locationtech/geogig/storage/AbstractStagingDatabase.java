@@ -22,6 +22,7 @@ import org.locationtech.geogig.api.RevFeatureType;
 import org.locationtech.geogig.api.RevObject;
 import org.locationtech.geogig.api.RevTag;
 import org.locationtech.geogig.api.RevTree;
+import org.locationtech.geogig.repository.Hints;
 
 import com.google.common.base.Supplier;
 import com.google.inject.Inject;
@@ -156,20 +157,28 @@ public abstract class AbstractStagingDatabase implements StagingDatabase {
 
     @Override
     public <T extends RevObject> T get(ObjectId id, Class<T> type) {
-        T obj = stagingDb.getIfPresent(id, type);
+        RevObject obj = stagingDb.getIfPresent(id, Hints.nil());
         if (null == obj) {
             obj = repositoryDb.get(id, type);
         }
-        return obj;
+        return type.cast(obj);
+    }
+
+    @Override
+    public <T extends RevObject> T get(ObjectId id, Class<T> type, Hints hints) {
+        RevObject obj = stagingDb.getIfPresent(id, hints);
+        if (null == obj) {
+            obj = repositoryDb.get(id, type, hints);
+        }
+        return type.cast(obj);
     }
 
     @Override
     @Nullable
-    public <T extends RevObject> T getIfPresent(ObjectId id, Class<T> clazz)
-            throws IllegalArgumentException {
-        T obj = stagingDb.getIfPresent(id, clazz);
+    public RevObject getIfPresent(ObjectId id, Hints hints) throws IllegalArgumentException {
+        RevObject obj = stagingDb.getIfPresent(id, hints);
         if (null == obj) {
-            obj = repositoryDb.getIfPresent(id, clazz);
+            obj = repositoryDb.getIfPresent(id, hints);
         }
         return obj;
     }
@@ -184,8 +193,7 @@ public abstract class AbstractStagingDatabase implements StagingDatabase {
     }
 
     @Override
-    public @Nullable
-    RevObject getIfPresent(ObjectId id) {
+    public @Nullable RevObject getIfPresent(ObjectId id) {
         RevObject obj = stagingDb.getIfPresent(id);
         if (null == obj) {
             obj = repositoryDb.getIfPresent(id);

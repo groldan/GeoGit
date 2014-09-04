@@ -41,6 +41,7 @@ import org.locationtech.geogig.api.plumbing.DiffTree;
 import org.locationtech.geogig.api.plumbing.RevObjectParse;
 import org.locationtech.geogig.api.plumbing.diff.DiffEntry;
 import org.locationtech.geogig.geotools.data.GeoGigDataStore.ChangeType;
+import org.locationtech.geogig.repository.Hints;
 import org.opengis.feature.Feature;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
@@ -63,6 +64,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.vividsolutions.jts.geom.Envelope;
+import com.vividsolutions.jts.geom.GeometryFactory;
 
 /**
  *
@@ -74,18 +76,29 @@ class GeogigFeatureReader<T extends FeatureType, F extends Feature> implements F
 
     private static final FilterFactory2 filterFactory = CommonFactoryFinder.getFilterFactory2();
 
-    private SimpleFeatureType schema;
+    private final SimpleFeatureType schema;
 
     private Iterator<SimpleFeature> features;
 
     @Nullable
-    private Integer offset;
+    private final Integer offset;
 
     @Nullable
-    private Integer maxFeatures;
+    private final Integer maxFeatures;
 
     @Nullable
     private final ScreenMapFilter screenMapFilter;
+
+    @Nullable
+    private GeometryFactory geometryFactory;
+
+    private final DiffTree diffOp;
+
+    private final ChangeType changeType;
+
+    private final Filter filter;
+
+    private final Context context;
 
     /**
      * @param context
@@ -111,6 +124,7 @@ class GeogigFeatureReader<T extends FeatureType, F extends Feature> implements F
         checkNotNull(headRef);
         checkNotNull(oldHeadRef);
         checkNotNull(changeType);
+        this.context = context;
         this.schema = schema;
         this.offset = offset;
         this.maxFeatures = maxFeatures;
@@ -125,9 +139,9 @@ class GeogigFeatureReader<T extends FeatureType, F extends Feature> implements F
         Preconditions.checkArgument(parentTree.isPresent(), "Feature type tree not found: %s",
                 typeTreeRefSpec);
 
-        final Filter filter = reprojectFilter(origFilter);
+        this.filter = reprojectFilter(origFilter);
 
-        DiffTree diffOp = context.command(DiffTree.class);
+        this.diffOp = context.command(DiffTree.class);
         diffOp.setOldVersion(effectiveOldHead);
         diffOp.setNewVersion(effectiveHead);
 
@@ -148,28 +162,8 @@ class GeogigFeatureReader<T extends FeatureType, F extends Feature> implements F
             LOGGER.trace("{}: query bounds: {}", getClass().getSimpleName(), queryBounds);
             diffOp.setBoundsFilter(queryBounds);
         }
+        this.changeType = changeType;
         diffOp.setChangeTypeFilter(changeType(changeType));
-
-        Iterator<DiffEntry> diffs = diffOp.call();
-
-        Iterator<NodeRef> featureRefs = toFeatureRefs(diffs, changeType);
-
-        final boolean filterSupportedByRefs = Filter.INCLUDE.equals(filter)
-                || filter instanceof BBOX || filter instanceof Id;
-
-        if (filterSupportedByRefs) {
-            featureRefs = applyRefsOffsetLimit(featureRefs);
-        }
-
-        NodeRefToFeature refToFeature = new NodeRefToFeature(context, schema);
-        final Iterator<SimpleFeature> featuresUnfiltered = transform(featureRefs, refToFeature);
-
-        FilterPredicate filterPredicate = new FilterPredicate(filter);
-        Iterator<SimpleFeature> featuresFiltered = filter(featuresUnfiltered, filterPredicate);
-        if (!filterSupportedByRefs) {
-            featuresFiltered = applyFeaturesOffsetLimit(featuresFiltered);
-        }
-        this.features = featuresFiltered;
     }
 
     private DiffEntry.ChangeType changeType(ChangeType changeType) {
@@ -241,13 +235,44 @@ class GeogigFeatureReader<T extends FeatureType, F extends Feature> implements F
 
     @Override
     public boolean hasNext() {
+        if (this.features == null) {
+            init();
+        }
         boolean hasNext = features.hasNext();
         return hasNext;
+    }
+
+    private void init() {
+        Iterator<DiffEntry> diffs = diffOp.call();
+
+        Iterator<NodeRef> featureRefs = toFeatureRefs(diffs, changeType);
+
+        final boolean filterSupportedByRefs = Filter.INCLUDE.equals(filter)
+                || filter instanceof BBOX || filter instanceof Id;
+
+        if (filterSupportedByRefs) {
+            featureRefs = applyRefsOffsetLimit(featureRefs);
+        }
+
+        Hints hints = Hints.nil();
+        if (geometryFactory != null) {
+            hints = Hints.geometryFactory(geometryFactory);
+        }
+        NodeRefToFeature refToFeature = new NodeRefToFeature(context, schema, hints);
+        final Iterator<SimpleFeature> featuresUnfiltered = transform(featureRefs, refToFeature);
+
+        FilterPredicate filterPredicate = new FilterPredicate(filter);
+        Iterator<SimpleFeature> featuresFiltered = filter(featuresUnfiltered, filterPredicate);
+        if (!filterSupportedByRefs) {
+            featuresFiltered = applyFeaturesOffsetLimit(featuresFiltered);
+        }
+        this.features = featuresFiltered;
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public F next() {
+        Preconditions.checkState(hasNext());
         return (F) features.next();
     }
 
@@ -282,9 +307,10 @@ class GeogigFeatureReader<T extends FeatureType, F extends Feature> implements F
 
         private FeatureBuilder featureBuilder;
 
-        public NodeRefToFeature(Context commandLocator, SimpleFeatureType schema) {
+        public NodeRefToFeature(Context commandLocator, SimpleFeatureType schema, Hints hints) {
             this.featureBuilder = new FeatureBuilder(schema);
             this.parseRevFeatureCommand = commandLocator.command(RevObjectParse.class);
+            this.parseRevFeatureCommand.setHints(hints);
         }
 
         @Override
@@ -462,5 +488,9 @@ class GeogigFeatureReader<T extends FeatureType, F extends Feature> implements F
             return !skip;
         }
 
+    }
+
+    public void setGeometryFactory(GeometryFactory geometryFactory) {
+        this.geometryFactory = geometryFactory;
     }
 }

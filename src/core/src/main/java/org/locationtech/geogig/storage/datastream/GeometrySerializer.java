@@ -37,7 +37,7 @@ import com.vividsolutions.jts.geom.impl.PackedCoordinateSequenceFactory;
  * This is work in progress and not ready for production. It'll be a serialization format for JTS
  * geometries more compact than WKB, and ideally would support different precision models.
  */
-class GeometrySerializer implements ValueSerializer {
+class GeometrySerializer extends ValueSerializer {
 
     private static final int POINT = 0x01;
 

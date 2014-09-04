@@ -11,6 +11,8 @@ package org.locationtech.geogig.api.plumbing;
 import org.locationtech.geogig.api.AbstractGeoGigOp;
 import org.locationtech.geogig.api.ObjectId;
 import org.locationtech.geogig.api.RevObject;
+import org.locationtech.geogig.repository.Hints;
+import org.locationtech.geogig.storage.ObjectDatabase;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -27,6 +29,12 @@ public class RevObjectParse extends AbstractGeoGigOp<Optional<RevObject>> {
     private ObjectId objectId;
 
     private String refSpec;
+
+    private Hints hints;
+
+    public RevObjectParse() {
+        this.hints = Hints.nil();
+    }
 
     /**
      * @param refSpec the ref spec to resolve
@@ -45,6 +53,12 @@ public class RevObjectParse extends AbstractGeoGigOp<Optional<RevObject>> {
     public RevObjectParse setObjectId(final ObjectId objectId) {
         this.refSpec = null;
         this.objectId = objectId;
+        return this;
+    }
+
+    public RevObjectParse setHints(Hints hints) {
+        Preconditions.checkNotNull(hints);
+        this.hints = hints;
         return this;
     }
 
@@ -78,7 +92,9 @@ public class RevObjectParse extends AbstractGeoGigOp<Optional<RevObject>> {
         if (resolvedObjectId.isNull()) {
             return Optional.absent();
         }
-        RevObject revObject = stagingDatabase().get(resolvedObjectId);
+        ObjectDatabase db = stagingDatabase();
+        Hints hints = this.hints;
+        RevObject revObject = db.get(resolvedObjectId, clazz, hints);
         Preconditions.checkArgument(clazz.isAssignableFrom(revObject.getClass()),
                 "Wrong return class for RevObjectParse operation");
 

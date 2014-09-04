@@ -25,6 +25,7 @@ import org.locationtech.geogig.api.RevFeatureType;
 import org.locationtech.geogig.api.RevObject;
 import org.locationtech.geogig.api.RevTag;
 import org.locationtech.geogig.api.RevTree;
+import org.locationtech.geogig.repository.Hints;
 import org.locationtech.geogig.repository.RepositoryConnectionException;
 import org.locationtech.geogig.storage.BulkOpListener;
 import org.locationtech.geogig.storage.ConfigDatabase;
@@ -92,11 +93,12 @@ public class MongoObjectDatabase implements ObjectDatabase {
         this.collectionName = collectionName;
     }
 
-    private RevObject fromBytes(ObjectId id, byte[] buffer) {
+    private RevObject fromBytes(ObjectId id, byte[] buffer, Hints hints) {
         ByteArrayInputStream byteStream = new ByteArrayInputStream(buffer);
         RevObject result;
         try {
-            result = serializers.createObjectReader().read(id, new LZFInputStream(byteStream));
+            result = serializers.createObjectReader().read(id, new LZFInputStream(byteStream),
+                    hints);
         } catch (Exception e) {
             throw Throwables.propagate(e);
         }
@@ -198,12 +200,7 @@ public class MongoObjectDatabase implements ObjectDatabase {
 
     @Override
     public RevObject get(ObjectId id) {
-        RevObject result = getIfPresent(id);
-        if (result != null) {
-            return result;
-        } else {
-            throw new NoSuchElementException("No object with id: " + id);
-        }
+        return get(id, RevObject.class, Hints.nil());
     }
 
     @Override
@@ -211,22 +208,30 @@ public class MongoObjectDatabase implements ObjectDatabase {
         return clazz.cast(get(id));
     }
 
+    public <T extends RevObject> T get(ObjectId id, Class<T> clazz, Hints hints) {
+        RevObject result = getIfPresent(id, hints);
+        if (result == null) {
+            throw new NoSuchElementException("No object with id: " + id);
+        }
+        return clazz.cast(result);
+    }
+
     @Override
     public RevObject getIfPresent(ObjectId id) {
+        return getIfPresent(id, Hints.nil());
+    }
+
+    @Override
+    public RevObject getIfPresent(ObjectId id, Hints hints) {
         DBObject query = new BasicDBObject();
         query.put("oid", id.toString());
         DBCursor results = collection.find(query);
         if (results.hasNext()) {
             DBObject result = results.next();
-            return fromBytes(id, (byte[]) result.get("serialized_object"));
+            return fromBytes(id, (byte[]) result.get("serialized_object"), hints);
         } else {
             return null;
         }
-    }
-
-    @Override
-    public <T extends RevObject> T getIfPresent(ObjectId id, Class<T> clazz) {
-        return clazz.cast(getIfPresent(id));
     }
 
     @Override

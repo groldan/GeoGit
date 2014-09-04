@@ -14,6 +14,7 @@ import org.locationtech.geogig.api.ContextBuilder;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
+import com.vividsolutions.jts.geom.GeometryFactory;
 
 /**
  * Hints that guice created dependencies can accept on their constructors, contains flags to
@@ -31,6 +32,16 @@ public class Hints implements Serializable {
     public static final String STAGING_READ_ONLY = "STAGING_READ_ONLY";
 
     public static final String REMOTES_READ_ONLY = "REMOTES_READ_ONLY";
+
+    public static final String JTS_GEOMETRY_FACTORY = "JTS_GEOMETRY_FACTORY";
+
+    private static final Hints NIL = new Hints() {
+        @Override
+        public void set(String key, Serializable value) {
+            throw new IllegalArgumentException(
+                    "This is the nil Hints instance, no values can be set");
+        }
+    };
 
     private Map<String, Serializable> hintsMap = Maps.newHashMap();
 
@@ -76,5 +87,19 @@ public class Hints implements Serializable {
         hints.set(Hints.STAGING_READ_ONLY, Boolean.FALSE);
         hints.set(Hints.REMOTES_READ_ONLY, Boolean.FALSE);
         return hints;
+    }
+
+    public static Hints geometryFactory(GeometryFactory gf) {
+        Hints hints = new Hints();
+        hints.set(Hints.JTS_GEOMETRY_FACTORY, gf);
+        return hints;
+    }
+
+    public Optional<GeometryFactory> geometryFactory() {
+        return Optional.fromNullable((GeometryFactory) hintsMap.get(Hints.JTS_GEOMETRY_FACTORY));
+    }
+
+    public static Hints nil() {
+        return Hints.NIL;
     }
 }
