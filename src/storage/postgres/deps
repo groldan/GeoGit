@@ -1,0 +1,48 @@
+[INFO] Scanning for projects...
+[INFO]                                                                         
+[INFO] ------------------------------------------------------------------------
+[INFO] Building PostgreSQL Storage Backend 1.0-SNAPSHOT
+[INFO] ------------------------------------------------------------------------
+[INFO] 
+[INFO] --- maven-dependency-plugin:2.2:list (default-cli) @ geogig-postgres ---
+[INFO] 
+[INFO] The following files have been resolved:
+[INFO]    org.jdom:jdom:jar:1.1.3:compile
+[INFO]    org.slf4j:slf4j-api:jar:1.7.5:compile
+[INFO]    org.javassist:javassist:jar:3.18.1-GA:compile
+[INFO]    org.hamcrest:hamcrest-core:jar:1.1:test
+[INFO]    com.zaxxer:HikariCP-java6:jar:2.0.1:compile
+[INFO]    com.vividsolutions:jts:jar:1.13:compile
+[INFO]    org.locationtech.geogig:geogig-core:jar:1.0-SNAPSHOT:compile
+[INFO]    org.geotools:gt-referencing:jar:11.2:compile
+[INFO]    org.geotools:gt-cql:jar:11.2:compile
+[INFO]    jgridshift:jgridshift:jar:1.0:compile
+[INFO]    com.google.code.gson:gson:jar:2.2.2:compile
+[INFO]    org.postgresql:postgresql:jar:9.3-1102-jdbc41:compile
+[INFO]    org.geotools:gt-main:jar:11.2:compile
+[INFO]    org.hsqldb:hsqldb:jar:2.2.8:compile
+[INFO]    junit:junit:jar:4.10:test
+[INFO]    java3d:vecmath:jar:1.3.2:compile
+[INFO]    org.geotools:gt-api:jar:11.2:compile
+[INFO]    javax.inject:javax.inject:jar:1:compile
+[INFO]    ch.qos.logback:logback-classic:jar:1.1.2:test
+[INFO]    com.google.inject.extensions:guice-multibindings:jar:3.0:compile
+[INFO]    net.java.dev.jsr-275:jsr-275:jar:1.0-beta-2:compile
+[INFO]    commons-pool:commons-pool:jar:1.5.4:compile
+[INFO]    com.google.inject:guice:jar:no_aop:3.0:compile
+[INFO]    com.ning:compress-lzf:jar:1.0.1:compile
+[INFO]    com.google.guava:guava:jar:17.0:compile
+[INFO]    org.geotools:gt-opengis:jar:11.2:compile
+[INFO]    ch.qos.logback:logback-core:jar:1.1.2:test
+[INFO]    com.google.code.findbugs:jsr305:jar:2.0.3:compile
+[INFO]    org.geotools:gt-epsg-hsql:jar:11.2:compile
+[INFO]    javax.media:jai_core:jar:1.1.3:compile
+[INFO]    org.geotools:gt-metadata:jar:11.2:compile
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 1.367s
+[INFO] Finished at: Mon Aug 18 17:16:10 ART 2014
+[INFO] Final Memory: 12M/481M
+[INFO] ------------------------------------------------------------------------

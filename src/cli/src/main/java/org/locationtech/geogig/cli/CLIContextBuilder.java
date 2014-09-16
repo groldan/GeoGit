@@ -35,6 +35,10 @@ import org.locationtech.geogig.storage.fs.FileRefDatabase;
 import org.locationtech.geogig.storage.mongo.MongoGraphDatabase;
 import org.locationtech.geogig.storage.mongo.MongoObjectDatabase;
 import org.locationtech.geogig.storage.mongo.MongoStagingDatabase;
+import org.locationtech.geogig.storage.postgresql.PGGraphDatabase;
+import org.locationtech.geogig.storage.postgresql.PGObjectDatabase;
+import org.locationtech.geogig.storage.postgresql.PGStagingDatabase;
+import org.locationtech.geogig.storage.postgresql.PGStorage;
 import org.locationtech.geogig.storage.sqlite.SQLiteStorage;
 import org.locationtech.geogig.storage.sqlite.XerialGraphDatabase;
 import org.locationtech.geogig.storage.sqlite.XerialObjectDatabase;
@@ -102,6 +106,12 @@ public class CLIContextBuilder extends ContextBuilder {
                             new VersionedFormat(SQLiteStorage.FORMAT_NAME, SQLiteStorage.VERSION))//
                     .to(XerialObjectDatabase.class)//
                     .in(Scopes.SINGLETON);
+
+            objectPlugins //
+                    .addBinding(new VersionedFormat(PGStorage.FORMAT_NAME, PGStorage.VERSION))//
+                    .to(PGObjectDatabase.class)//
+                    .in(Scopes.SINGLETON);
+
             MapBinder<VersionedFormat, StagingDatabase> stagingPlugins = MapBinder.newMapBinder(
                     binder(), VersionedFormat.class, StagingDatabase.class);
             stagingPlugins //
@@ -125,6 +135,12 @@ public class CLIContextBuilder extends ContextBuilder {
                             new VersionedFormat(SQLiteStorage.FORMAT_NAME, SQLiteStorage.VERSION))//
                     .to(XerialStagingDatabase.class)//
                     .in(Scopes.SINGLETON);
+
+            stagingPlugins //
+                    .addBinding(new VersionedFormat(PGStorage.FORMAT_NAME, PGStorage.VERSION))//
+                    .to(PGStagingDatabase.class)//
+                    .in(Scopes.SINGLETON);
+
             MapBinder<VersionedFormat, GraphDatabase> graphPlugins = MapBinder.newMapBinder(
                     binder(), VersionedFormat.class, GraphDatabase.class);
             graphPlugins //
@@ -147,6 +163,11 @@ public class CLIContextBuilder extends ContextBuilder {
                     .addBinding(
                             new VersionedFormat(SQLiteStorage.FORMAT_NAME, SQLiteStorage.VERSION)) //
                     .to(XerialGraphDatabase.class) //
+                    .in(Scopes.SINGLETON);
+
+            graphPlugins //
+                    .addBinding(new VersionedFormat(PGStorage.FORMAT_NAME, PGStorage.VERSION))//
+                    .to(PGGraphDatabase.class)//
                     .in(Scopes.SINGLETON);
         }
     }
