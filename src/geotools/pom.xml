@@ -50,6 +50,17 @@
       <groupId>org.geotools.jdbc</groupId>
       <artifactId>gt-jdbc-postgis</artifactId>
       <version>${gt.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>postgresql</groupId>
+          <artifactId>postgresql</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>9.3-1102-jdbc41</version>
     </dependency>
       
     <dependency>
