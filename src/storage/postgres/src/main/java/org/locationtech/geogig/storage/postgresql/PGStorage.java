@@ -5,8 +5,6 @@
 package org.locationtech.geogig.storage.postgresql;
 
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.sql.Connection;
@@ -24,11 +22,7 @@ import org.slf4j.Logger;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
-import com.jolbox.bonecp.BoneCPConfig;
 import com.jolbox.bonecp.BoneCPDataSource;
-import com.jolbox.bonecp.ConnectionHandle;
-import com.jolbox.bonecp.hooks.AbstractConnectionHook;
-import com.jolbox.bonecp.hooks.ConnectionHook;
 
 /**
  * Utility class for SQLite storage.
@@ -46,41 +40,9 @@ public class PGStorage {
      */
     public static final String VERSION = "0.1";
 
-    private static Map<Connection, Map<String, PreparedStatement>> OPEN_STATEMENTS = new IdentityHashMap<>();
+    static Map<Connection, Map<String, PreparedStatement>> OPEN_STATEMENTS = new IdentityHashMap<>();
 
-    private static ConnectionHook STATEMENTS_CLEANER = new AbstractConnectionHook() {
-
-        @Override
-        public void onDestroy(ConnectionHandle connection) {
-            if (connection.isClosed()) {
-                return;
-            }
-            if (!connection.isConnectionAlive()) {
-                return;
-            }
-            Connection wrapped;
-            try {
-                wrapped = connection.unwrap(Connection.class);
-            } catch (SQLException e1) {
-                e1.printStackTrace();
-                return;
-            }
-            Map<String, PreparedStatement> connStatements;
-            Map<Connection, Map<String, PreparedStatement>> openStatements = OPEN_STATEMENTS;
-            synchronized (openStatements) {
-                connStatements = openStatements.remove(wrapped);
-            }
-            if (connStatements != null) {
-                for (PreparedStatement st : connStatements.values()) {
-                    try {
-                        st.close();
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }
-    };
+    private static final PGDataSourceManager DATASOURCE_POOL = new PGDataSourceManager();
 
     static PreparedStatement prepareStatement(final Connection connection, final String sql)
             throws SQLException {
@@ -157,46 +119,18 @@ public class PGStorage {
             }
         }
 
-        ForwardingDataSource ds = new ForwardingDataSource(driverName);
-        ds.setServerName("localhost");
-        ds.setDatabase("osm_shape");
-        ds.setPortNumber(5432);
-        ds.setUser("postgres");
-        ds.setPassword("geo123");
-
-        // call("setServerName", "localhost", dataSource);
-        // call("setDatabaseName", "geogigconfig", dataSource);
-        // call("setPortNumber", Integer.valueOf(5432), dataSource);
-        // call("setUser", "postgres", dataSource);
-        // call("setPassword", "geo123", dataSource);
-        BoneCPConfig config = new BoneCPConfig();
-        // config.setJdbcUrl("jdbc:postgresql://localhost:5432/geogigconfig");
-        // config.setUsername("postgres");
-        // config.setPassword("geo123");
-        config.setMaxConnectionsPerPartition(20);
-        config.setDatasourceBean(ds);
-
-        BoneCPDataSource connPool = new BoneCPDataSource(config);
-        connPool.setConnectionHook(STATEMENTS_CLEANER);
-        return connPool;
-    }
-
-    private static void call(String setter, Object value, Object obj) {
-        for (Method m : obj.getClass().getMethods()) {
-            if (setter.equals(m.getName())) {
-                try {
-                    m.invoke(obj, value);
-                } catch (IllegalAccessException | IllegalArgumentException
-                        | InvocationTargetException e) {
-                    throw Throwables.propagate(e);
-                }
-                break;
-            }
-        }
+        String server = "localhost";
+        int portNumber = 5432;
+        String databaseName = "osm_shape";
+        String user = "postgres";
+        String password = "geo123";
+        Config config = new Config(driverName, server, portNumber, databaseName, user, password);
+        BoneCPDataSource dataSource = DATASOURCE_POOL.acquire(config);
+        return dataSource;
     }
 
     static void closeDataSource(DataSource ds) {
-        ((BoneCPDataSource) ds).close();
+        DATASOURCE_POOL.release((BoneCPDataSource) ds);
     }
 
     static Connection newConnection(DataSource ds) {

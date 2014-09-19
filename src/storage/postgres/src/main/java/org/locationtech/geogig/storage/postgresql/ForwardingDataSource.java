@@ -10,65 +10,42 @@ import java.util.logging.Logger;
 
 import javax.sql.DataSource;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 
 class ForwardingDataSource implements DataSource {
 
     private final Driver driver;
 
-    private String user;
-
-    private String password;
-
-    private String databaseName;
-
-    private int portNumber = 5432;
-
-    private String server;
-
     private PrintWriter logger;
 
     private int loginTimeout;
 
-    public ForwardingDataSource(final String driverClassName) {
+    private final Config config;
+
+    public ForwardingDataSource(final Config config) {
+        this.config = config;
         try {
-            Class<?> dclass = Class.forName(driverClassName);
-            driver = (Driver) dclass.newInstance();
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+            Class<?> dclass = Class.forName(config.driverClassName);
+            Preconditions.checkArgument(Driver.class.isAssignableFrom(dclass),
+                    "Provided driver class name does not extend java.sql.Driver");
+            this.driver = (Driver) dclass.newInstance();
+        } catch (Exception e) {
             throw Throwables.propagate(e);
         }
-    }
 
-    public void setUser(String user) {
-        this.user = user;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public void setServerName(String server) {
-        this.server = server;
-    }
-
-    public void setDatabase(String databaseName) {
-        this.databaseName = databaseName;
-    }
-
-    public void setPortNumber(int portNumber) {
-        this.portNumber = portNumber;
     }
 
     @Override
     public Connection getConnection() throws SQLException {
-        return getConnection(user, password);
+        return getConnection(config.user, config.password);
     }
 
     @Override
     public Connection getConnection(String username, String password) throws SQLException {
         Properties info = new Properties();
-        if (user != null) {
-            info.put("user", user);
+        if (username != null) {
+            info.put("user", username);
         }
         if (password != null) {
             info.put("password", password);
@@ -76,12 +53,12 @@ class ForwardingDataSource implements DataSource {
         return driver.connect(getUrl(), info);
     }
 
-    private String getUrl() {
-        StringBuilder sb = new StringBuilder("jdbc:postgresql://").append(server);
-        if (portNumber != 0) {
-            sb.append(':').append(portNumber);
+    public String getUrl() {
+        StringBuilder sb = new StringBuilder("jdbc:postgresql://").append(config.server);
+        if (config.portNumber != 0) {
+            sb.append(':').append(config.portNumber);
         }
-        sb.append('/').append(databaseName);
+        sb.append('/').append(config.databaseName);
         sb.append("?loginTimeout=").append(loginTimeout);
         sb.append("&binaryTransfer=true");
         sb.append("&prepareThreshold=3");
