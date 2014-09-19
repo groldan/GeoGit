@@ -352,10 +352,10 @@ class ObjectDatabaseCacheInterceptor {
             if (!cacheFeatures && object instanceof RevFeature) {
                 return false;
             }
-            // do not cache leaf trees. They tend to be quite large. TODO: make this configurable
-            if ((object instanceof RevTree) && ((RevTree) object).features().isPresent()) {
-                return false;
-            }
+//            // do not cache leaf trees. They tend to be quite large. TODO: make this configurable
+//            if ((object instanceof RevTree) && ((RevTree) object).features().isPresent()) {
+//                return false;
+//            }
             return object != null;
         }
     }

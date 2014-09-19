@@ -602,15 +602,18 @@ public class PGObjectDatabase implements ObjectDatabase {
                 return false;
             }
 
+//            CREATE OR REPLACE RULE stage_ignore_duplicate_inserts AS
+//            ON INSERT TO stage
+//            WHERE (EXISTS ( SELECT 1
+//                   FROM stage
+//                  WHERE stage.id1 = NEW.id1 and stage.id2 = NEW.id2)) DO INSTEAD NOTHING;
+
             @Override
             protected Void doRun(Connection cx) throws SQLException, IOException {
-                // use INSERT OR IGNORE to deal with duplicates cleanly
-                // String sql = format("INSERT OR IGNORE INTO %s (object,id) VALUES (?,?)", dbName);
-                String sql = format("INSERT INTO objects (id1, id2, object) "
-                        + "(SELECT * FROM( VALUES(?, ?, ?)) AS values(id1, id2, blob) "
-                        + "WHERE NOT EXISTS ("
-                        + "SELECT 1 FROM objects o WHERE o.id1 = values.id1 AND o.id2 = values.id2"
-                        + " ))", dbName);
+                // Note we rely on <dbname>_ignore_duplicate_inserts RULE to have been created so
+                // attempts to insert duplicate key pairs return zero update count instead of making
+                // the whole batch of inserts fail.
+                String sql = format("INSERT INTO objects (id1, id2, object) VALUES(?,?,?)", dbName);
                 PreparedStatement stmt = PGStorage.prepareStatement(cx, log(sql, LOG));
                 try {
                     Iterator<? extends RevObject> it = objects;
