@@ -13,6 +13,7 @@ import java.util.Map;
 
 import org.geotools.filter.identity.FeatureIdVersionedImpl;
 import org.locationtech.geogig.api.plumbing.RevObjectParse;
+import org.locationtech.geogig.repository.Hints;
 import org.opengis.feature.Feature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.FeatureType;
@@ -22,6 +23,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
+import com.vividsolutions.jts.geom.GeometryFactory;
 
 /**
  * Provides a method of building features from {@link RevFeature} objects that have the type
@@ -92,7 +94,13 @@ public class FeatureBuilder {
 
         GeogigSimpleFeature feature = new GeogigSimpleFeature(valueSupplier,
                 (SimpleFeatureType) featureType, fid, attNameToRevTypeIndex, node);
-
+        Hints hints = parser.getHints();
+        if (hints != null) {
+            Optional<GeometryFactory> geometryFactory = hints.geometryFactory();
+            if (geometryFactory.isPresent()) {
+                feature.setGeometryFactory(geometryFactory.get());
+            }
+        }
         return feature;
     }
 

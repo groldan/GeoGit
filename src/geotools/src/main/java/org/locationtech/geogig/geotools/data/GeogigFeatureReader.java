@@ -44,6 +44,7 @@ import org.locationtech.geogig.api.RevTree;
 import org.locationtech.geogig.api.plumbing.DiffTree;
 import org.locationtech.geogig.api.plumbing.FindTreeChild;
 import org.locationtech.geogig.api.plumbing.ResolveTreeish;
+import org.locationtech.geogig.api.plumbing.RevObjectParse;
 import org.locationtech.geogig.api.plumbing.diff.DiffEntry;
 import org.locationtech.geogig.geotools.data.GeoGigDataStore.ChangeType;
 import org.locationtech.geogig.repository.Hints;
@@ -53,6 +54,7 @@ import org.opengis.feature.Feature;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.FeatureType;
+import org.opengis.feature.type.GeometryDescriptor;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
 import org.opengis.filter.Id;
@@ -73,6 +75,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.Point;
 
 /**
  *
@@ -108,6 +111,8 @@ class GeogigFeatureReader<T extends FeatureType, F extends Feature> implements F
 
     private final Context context;
 
+    private List<String> requiredAttributes;
+
     /**
      * @param context
      * @param schema
@@ -118,13 +123,13 @@ class GeogigFeatureReader<T extends FeatureType, F extends Feature> implements F
      * @param offset
      * @param maxFeatures
      * @param changeType
-     * @param ignoreAttributes
+     * @param requiredAttributes
      */
     public GeogigFeatureReader(final Context context, final SimpleFeatureType schema,
             final Filter origFilter, final String typeTreePath, final String headRef,
             String oldHeadRef, ChangeType changeType, @Nullable Integer offset,
             @Nullable Integer maxFeatures, @Nullable final ScreenMap screenMap,
-            final boolean ignoreAttributes) {
+            List<String> requiredAttributes) {
         checkNotNull(context);
         checkNotNull(schema);
         checkNotNull(origFilter);
@@ -132,10 +137,12 @@ class GeogigFeatureReader<T extends FeatureType, F extends Feature> implements F
         checkNotNull(headRef);
         checkNotNull(oldHeadRef);
         checkNotNull(changeType);
+        checkNotNull(requiredAttributes);
         this.context = context;
         this.schema = schema;
         this.offset = offset;
         this.maxFeatures = maxFeatures;
+        this.requiredAttributes = requiredAttributes;
 
         final String effectiveHead = headRef == null ? Ref.WORK_HEAD : headRef;
         final String effectiveOldHead = oldHeadRef == null ? RevTree.EMPTY_TREE_ID.toString()
@@ -273,9 +280,22 @@ class GeogigFeatureReader<T extends FeatureType, F extends Feature> implements F
             hints = Hints.geometryFactory(geometryFactory);
         }
 
-        final Function<List<NodeRef>, Iterator<SimpleFeature>> function;
-        function = new FetchFunction(context.stagingDatabase(), schema, hints);
-        final int fetchSize = 1000;
+        Function<List<NodeRef>, Iterator<SimpleFeature>> function = null;
+        final ObjectDatabase source = context.stagingDatabase();
+        if (requiredAttributes.size() == 1) {
+            String attname = requiredAttributes.get(0);
+            GeometryDescriptor geomDescriptor = schema.getGeometryDescriptor();
+            if (geomDescriptor != null && geomDescriptor.getName().getLocalPart().equals(attname)
+                    && geomDescriptor.getType().getBinding().equals(Point.class)) {
+                function = new SimplePointsFetchFunction(source, schema, hints);
+                LOGGER.debug("Using lazy feature builder");
+            }
+        }
+        if (function == null) {
+            function = new FetchFunction(source, schema, hints);
+        }
+
+        final int fetchSize = 10_000;
         Iterator<List<NodeRef>> partition = Iterators.partition(featureRefs, fetchSize);
         Iterator<Iterator<SimpleFeature>> transformed = Iterators.transform(partition, function);
 
@@ -385,29 +405,37 @@ class GeogigFeatureReader<T extends FeatureType, F extends Feature> implements F
             Iterator<SimpleFeature> features = Iterators.transform(all, asFeature);
             return features;
         }
-
     }
 
-    // private static class NodeRefToFeature implements Function<NodeRef, SimpleFeature> {
-    //
-    // private RevObjectParse parseRevFeatureCommand;
-    //
-    // private FeatureBuilder featureBuilder;
-    //
-    // public NodeRefToFeature(Context commandLocator, SimpleFeatureType schema) {
-    // this.featureBuilder = new FeatureBuilder(schema);
-    // this.parseRevFeatureCommand = commandLocator.command(RevObjectParse.class);
-    // }
-    //
-    // @Override
-    // public SimpleFeature apply(final NodeRef featureRef) {
-    // final Node node = featureRef.getNode();
-    // final String id = featureRef.name();
-    //
-    // Feature feature = featureBuilder.buildLazy(id, node, parseRevFeatureCommand);
-    // return (SimpleFeature) feature;
-    // }
-    // };
+    private class SimplePointsFetchFunction implements
+            Function<List<NodeRef>, Iterator<SimpleFeature>> {
+
+        private final FeatureBuilder featureBuilder;
+
+        private final RevObjectParse parser;
+
+        public SimplePointsFetchFunction(ObjectDatabase source, SimpleFeatureType schema,
+                Hints hints) {
+            this.featureBuilder = new FeatureBuilder(schema);
+            this.parser = context.command(RevObjectParse.class);
+            this.parser.setHints(hints);
+        }
+
+        @Override
+        public Iterator<SimpleFeature> apply(List<NodeRef> refs) {
+            Envelope env = new Envelope();
+            List<SimpleFeature> features = new ArrayList<>(refs.size());
+            for (NodeRef ref : refs) {
+                env.setToNull();
+                String id = ref.name();
+                Node node = ref.getNode();
+                SimpleFeature feature = (SimpleFeature) featureBuilder.buildLazy(id, node, parser);
+                features.add(feature);
+            }
+            return features.iterator();
+        }
+
+    }
 
     private static final class FilterPredicate implements Predicate<SimpleFeature> {
         private Filter filter;

@@ -10,6 +10,9 @@
 package org.locationtech.geogig.geotools.data;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -44,6 +47,7 @@ import org.opengis.feature.Feature;
 import org.opengis.feature.FeatureVisitor;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.feature.type.AttributeType;
 import org.opengis.feature.type.Name;
 import org.opengis.filter.Filter;
 import org.opengis.filter.sort.SortBy;
@@ -53,6 +57,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 import com.vividsolutions.jts.geom.GeometryFactory;
 
 /**
@@ -340,20 +345,27 @@ class GeogigFeatureSource extends ContentFeatureSource {
 
         final SimpleFeatureType fullType = getSchema();
 
-        boolean ignoreAttributes = false;
-        final String[] propertyNames = query.getPropertyNames();
-        if (propertyNames != null && propertyNames.length == 0) {
+        final String[] queryPropertyNames = query.getPropertyNames();
+        List<String> requiredAttributes;
+        if (Query.ALL_NAMES/* ==null */== queryPropertyNames) {
+            List<AttributeType> atts = fullType.getTypes();
+            requiredAttributes = new ArrayList<String>(atts.size());
+            for (AttributeType at : atts) {
+                requiredAttributes.add(at.getName().getLocalPart());
+            }
+        } else {
             String[] inProcessFilteringAttributes = Filters.attributeNames(filter, fullType);
-            ignoreAttributes = inProcessFilteringAttributes.length == 0;
+            Set<String> attNames = Sets.newHashSet(inProcessFilteringAttributes);
+            attNames.addAll(Arrays.asList(queryPropertyNames));
+            requiredAttributes = new ArrayList<>(attNames);
         }
-
         final String compareRootRef = oldRoot();
         final GeoGigDataStore.ChangeType changeType = changeType();
         final Context context = getCommandLocator();
 
         nativeReader = new GeogigFeatureReader<SimpleFeatureType, SimpleFeature>(context, fullType,
                 filter, featureTypeTreePath, rootRef, compareRootRef, changeType, offset,
-                maxFeatures, screenMap, ignoreAttributes);
+                maxFeatures, screenMap, requiredAttributes);
         GeometryFactory gf = getGeometryFactory(query.getHints());
         if (gf != null) {
             nativeReader.setGeometryFactory(gf);

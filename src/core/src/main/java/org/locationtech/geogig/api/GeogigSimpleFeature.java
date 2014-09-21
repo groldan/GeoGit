@@ -45,6 +45,7 @@ import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
@@ -60,6 +61,8 @@ import com.vividsolutions.jts.geom.Point;
 public class GeogigSimpleFeature implements SimpleFeature {
 
     private static final GeometryFactory DEFAULT_GEOM_FACTORY = new GeometryFactory();
+
+    private GeometryFactory geometryFactory = DEFAULT_GEOM_FACTORY;
 
     private final FeatureId id;
 
@@ -131,6 +134,11 @@ public class GeogigSimpleFeature implements SimpleFeature {
         }
     }
 
+    void setGeometryFactory(GeometryFactory geometryFactory) {
+        Preconditions.checkNotNull(geometryFactory);
+        this.geometryFactory = geometryFactory;
+    }
+
     private List<Optional<Object>> mutableValues() {
         List<Optional<Object>> values = getValues();
         if (values instanceof ImmutableList) {
@@ -166,7 +174,7 @@ public class GeogigSimpleFeature implements SimpleFeature {
             if (e.isNull()) {
                 return null;
             }
-            return DEFAULT_GEOM_FACTORY.createPoint(new Coordinate(e.getMinX(), e.getMinY()));
+            return geometryFactory.createPoint(new Coordinate(e.getMinX(), e.getMinY()));
         } else if (resolvedValues == null) {
             return revFeature.get().getValue(index).orNull();
         }

@@ -63,6 +63,10 @@ public class RevObjectParse extends AbstractGeoGigOp<Optional<RevObject>> {
         return this;
     }
 
+    public Hints getHints() {
+        return this.hints;
+    }
+
     /**
      * @return the resolved object id
      * @throws IllegalArgumentException if the provided refspec doesn't resolve to any known object
