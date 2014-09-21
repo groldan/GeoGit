@@ -15,13 +15,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 
 /**
- * Module for the Xerial SQLite storage backend.
- * <p>
- * More information about the SQLite jdbc driver available at {@link https
- * ://bitbucket.org/xerial/sqlite-jdbc}.
- * </p>
- * 
- * @author Justin Deoliveira, Boundless
+ * Module for the PostgreSQL storage backend.
  */
 public class PGStorageModule extends AbstractModule {
 
@@ -30,9 +24,9 @@ public class PGStorageModule extends AbstractModule {
     @Override
     protected void configure() {
         bind(ConfigDatabase.class).to(PGConfigDatabase.class).in(Scopes.SINGLETON);
-        bind(ObjectDatabase.class).to(PGObjectDatabase.class).in(Scopes.SINGLETON);
-        bind(GraphDatabase.class).to(PGGraphDatabase.class).in(Scopes.SINGLETON);
-        bind(StagingDatabase.class).to(PGStagingDatabase.class).in(Scopes.SINGLETON);
+        bind(ObjectDatabase.class).to(PGObjectDatabaseV2.class).in(Scopes.SINGLETON);
+        bind(GraphDatabase.class).to(PGGraphDatabaseV2.class).in(Scopes.SINGLETON);
+        bind(StagingDatabase.class).to(PGStagingDatabaseV2.class).in(Scopes.SINGLETON);
     }
 
 }

@@ -408,7 +408,7 @@ public class PGConfigDatabase implements ConfigDatabase {
 
     synchronized DataSource connect(Config config) {
         if (this.dataSource == null) {
-            this.dataSource = newDataSource(config.file);
+            this.dataSource = null;// newDataSource(config.file);
 
             new DbOp<Void>() {
                 @Override

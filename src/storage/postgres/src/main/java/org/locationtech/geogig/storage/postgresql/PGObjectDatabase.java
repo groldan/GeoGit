@@ -6,15 +6,11 @@ package org.locationtech.geogig.storage.postgresql;
 
 import static com.google.common.collect.Iterables.transform;
 import static java.lang.String.format;
-import static org.locationtech.geogig.storage.postgresql.PGStorage.FORMAT_NAME;
-import static org.locationtech.geogig.storage.postgresql.PGStorage.VERSION;
-import static org.locationtech.geogig.storage.postgresql.PGStorage.geogigDir;
 import static org.locationtech.geogig.storage.postgresql.PGStorage.log;
 import static org.locationtech.geogig.storage.postgresql.PGStorage.rollbackAndRethrow;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Array;
@@ -42,13 +38,12 @@ import org.locationtech.geogig.api.RevFeatureType;
 import org.locationtech.geogig.api.RevObject;
 import org.locationtech.geogig.api.RevTag;
 import org.locationtech.geogig.api.RevTree;
-import org.locationtech.geogig.repository.RepositoryConnectionException;
+import org.locationtech.geogig.repository.Hints;
 import org.locationtech.geogig.storage.BulkOpListener;
 import org.locationtech.geogig.storage.ConfigDatabase;
 import org.locationtech.geogig.storage.ObjectDatabase;
 import org.locationtech.geogig.storage.ObjectInserter;
 import org.locationtech.geogig.storage.ObjectSerializingFactory;
-import org.locationtech.geogig.storage.datastream.DataStreamSerializationFactoryV2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,19 +57,13 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.google.inject.Inject;
 import com.ning.compress.lzf.LZFInputStream;
 import com.ning.compress.lzf.LZFOutputStream;
 
 /**
  * Base class for SQLite based object database.
- * 
- * @author Justin Deoliveira (Boundless)
- * @author Gabriel Roldan (Boundless)
- * 
- * @param <C> Connection type.
  */
-public class PGObjectDatabase implements ObjectDatabase {
+abstract class PGObjectDatabase implements ObjectDatabase {
 
     static final Logger LOG = LoggerFactory.getLogger(PGObjectDatabase.class);
 
@@ -90,37 +79,29 @@ public class PGObjectDatabase implements ObjectDatabase {
 
     final ConfigDatabase configdb;
 
-    final ObjectSerializingFactory serializer = DataStreamSerializationFactoryV2.INSTANCE;
+    final ObjectSerializingFactory serializer;
 
     DataSource dataSource;
 
-    @Inject
-    public PGObjectDatabase(ConfigDatabase configdb, Platform platform) {
-        this(configdb, platform, OBJECTS);
+    public PGObjectDatabase(ConfigDatabase configdb, Platform platform,
+            final ObjectSerializingFactory serializer) {
+        this(configdb, platform, serializer, OBJECTS);
     }
 
-    PGObjectDatabase(ConfigDatabase configdb, Platform platform, final String dbName) {
+    PGObjectDatabase(final ConfigDatabase configdb, final Platform platform,
+            final ObjectSerializingFactory serializer, final String dbName) {
         this.configdb = configdb;
         this.platform = platform;
+        this.serializer = serializer;
         this.dbName = dbName;
     }
 
     @Override
     public void open() {
         if (dataSource == null) {
-            dataSource = connect(geogigDir(platform));
+            dataSource = connect();
             init(dataSource);
         }
-    }
-
-    @Override
-    public void configure() throws RepositoryConnectionException {
-        RepositoryConnectionException.StorageType.OBJECT.configure(configdb, FORMAT_NAME, VERSION);
-    }
-
-    @Override
-    public void checkConfig() throws RepositoryConnectionException {
-        RepositoryConnectionException.StorageType.OBJECT.verify(configdb, FORMAT_NAME, VERSION);
     }
 
     @Override
@@ -176,12 +157,17 @@ public class PGObjectDatabase implements ObjectDatabase {
 
     @Override
     public <T extends RevObject> T get(ObjectId id, Class<T> type) throws IllegalArgumentException {
-        T obj = getIfPresent(id, type);
+        return get(id, type, Hints.nil());
+    }
+
+    @Override
+    public <T extends RevObject> T get(ObjectId id, Class<T> type, Hints hints)
+            throws IllegalArgumentException {
+        RevObject obj = getIfPresent(id, hints);
         if (obj == null) {
             throw new NoSuchElementException("No object with ids: " + id);
         }
-
-        return obj;
+        return type.cast(obj);
     }
 
     private AtomicLong getCount = new AtomicLong();
@@ -198,6 +184,12 @@ public class PGObjectDatabase implements ObjectDatabase {
 
     @Override
     public RevObject getIfPresent(ObjectId id) {
+        return getIfPresent(id, Hints.nil());
+    }
+
+    @Override
+    public @Nullable RevObject getIfPresent(ObjectId id, Hints hints)
+            throws IllegalArgumentException {
         getCount.incrementAndGet();
         Stopwatch sw = Stopwatch.createStarted();
         try {
@@ -206,18 +198,11 @@ public class PGObjectDatabase implements ObjectDatabase {
                 return null;
             }
             getObjectCount.incrementAndGet();
-            return readObject(bytes, id);
+            return readObject(bytes, id, hints);
         } finally {
             sw.stop();
             getTimeNanos.addAndGet(sw.elapsed(TimeUnit.NANOSECONDS));
         }
-    }
-
-    @Override
-    public <T extends RevObject> T getIfPresent(ObjectId id, Class<T> type)
-            throws IllegalArgumentException {
-        RevObject obj = getIfPresent(id);
-        return obj != null ? type.cast(obj) : null;
     }
 
     @Override
@@ -247,11 +232,12 @@ public class PGObjectDatabase implements ObjectDatabase {
 
     @Override
     public Iterator<RevObject> getAll(Iterable<ObjectId> ids) {
-        return getAll(ids, BulkOpListener.NOOP_LISTENER);
+        return getAll(ids, BulkOpListener.NOOP_LISTENER, Hints.nil());
     }
 
     @Override
-    public Iterator<RevObject> getAll(Iterable<ObjectId> ids, final BulkOpListener listener) {
+    public Iterator<RevObject> getAll(Iterable<ObjectId> ids, final BulkOpListener listener,
+            final Hints hints) {
 
         final int partitionSize = 10_000;
         Iterable<List<ObjectId>> partitionedIds = Iterables.partition(ids, partitionSize);
@@ -260,9 +246,11 @@ public class PGObjectDatabase implements ObjectDatabase {
         fetchFunction = new Function<List<ObjectId>, List<RevObject>>() {
             private BulkOpListener callback = listener;
 
+            private Hints readerHints = hints;
+
             @Override
             public List<RevObject> apply(List<ObjectId> input) {
-                List<RevObject> all = getAll(input, dataSource, callback);
+                List<RevObject> all = getAll(input, dataSource, callback, readerHints);
                 return all;
             }
         };
@@ -311,9 +299,9 @@ public class PGObjectDatabase implements ObjectDatabase {
     /**
      * Reads object from its binary representation as stored in the database.
      */
-    protected RevObject readObject(InputStream bytes, ObjectId id) {
+    protected RevObject readObject(InputStream bytes, ObjectId id, Hints hints) {
         try {
-            return serializer.createObjectReader().read(id, bytes);
+            return serializer.createObjectReader().read(id, bytes, hints);
         } catch (RuntimeException e) {
             System.err.println("Error reading object " + id);
             throw e;
@@ -335,8 +323,8 @@ public class PGObjectDatabase implements ObjectDatabase {
     /**
      * Opens a database connection, returning the object representing connection state.
      */
-    protected DataSource connect(File geogigDir) {
-        return PGStorage.newDataSource(new File(geogigDir, dbName + ".db"));
+    protected DataSource connect() {
+        return PGStorage.newDataSource(configdb);
     }
 
     /**
@@ -464,7 +452,7 @@ public class PGObjectDatabase implements ObjectDatabase {
     }
 
     private List<RevObject> getAll(final List<ObjectId> ids, final DataSource ds,
-            final BulkOpListener listener) {
+            final BulkOpListener listener, final Hints hints) {
 
         getAllCount.incrementAndGet();
         Stopwatch sw = Stopwatch.createStarted();
@@ -505,7 +493,7 @@ public class PGObjectDatabase implements ObjectDatabase {
                             if (queryIds.remove(id)) {
                                 bytes = rs.getBytes(2);
                                 in = new LZFInputStream(new ByteArrayInputStream(bytes));
-                                obj = readObject(in, id);
+                                obj = readObject(in, id, hints);
                                 found.add(obj);
                                 callback.found(id, Integer.valueOf(bytes.length));
                             }
@@ -602,11 +590,11 @@ public class PGObjectDatabase implements ObjectDatabase {
                 return false;
             }
 
-//            CREATE OR REPLACE RULE stage_ignore_duplicate_inserts AS
-//            ON INSERT TO stage
-//            WHERE (EXISTS ( SELECT 1
-//                   FROM stage
-//                  WHERE stage.id1 = NEW.id1 and stage.id2 = NEW.id2)) DO INSTEAD NOTHING;
+            // CREATE OR REPLACE RULE stage_ignore_duplicate_inserts AS
+            // ON INSERT TO stage
+            // WHERE (EXISTS ( SELECT 1
+            // FROM stage
+            // WHERE stage.id1 = NEW.id1 and stage.id2 = NEW.id2)) DO INSTEAD NOTHING;
 
             @Override
             protected Void doRun(Connection cx) throws SQLException, IOException {

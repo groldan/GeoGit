@@ -5,9 +5,6 @@
 package org.locationtech.geogig.storage.postgresql;
 
 import static java.lang.String.format;
-import static org.locationtech.geogig.storage.postgresql.PGObjectDatabase.STAGE;
-import static org.locationtech.geogig.storage.postgresql.PGStorage.FORMAT_NAME;
-import static org.locationtech.geogig.storage.postgresql.PGStorage.VERSION;
 import static org.locationtech.geogig.storage.postgresql.PGStorage.log;
 
 import java.io.IOException;
@@ -21,9 +18,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 import javax.sql.DataSource;
 
-import org.locationtech.geogig.api.Platform;
 import org.locationtech.geogig.api.plumbing.merge.Conflict;
-import org.locationtech.geogig.repository.RepositoryConnectionException;
 import org.locationtech.geogig.storage.AbstractStagingDatabase;
 import org.locationtech.geogig.storage.ConfigDatabase;
 import org.locationtech.geogig.storage.ObjectDatabase;
@@ -35,15 +30,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.inject.Inject;
 
 /**
  * Base class for SQLite based staging database.
- * 
- * @author Justin Deoliveira, Boundless
- * 
  */
-public class PGStagingDatabase extends AbstractStagingDatabase {
+abstract class PGStagingDatabase extends AbstractStagingDatabase {
     final static Logger LOG = LoggerFactory.getLogger(PGStagingDatabase.class);
 
     private static final String NULL_NAMESPACE = "nil";
@@ -52,18 +43,12 @@ public class PGStagingDatabase extends AbstractStagingDatabase {
 
     final ConfigDatabase configdb;
 
-    final Platform platform;
-
     private DataSource cx;
 
-    @Inject
-    public PGStagingDatabase(ObjectDatabase repoDb, ConfigDatabase configdb, Platform platform) {
-
-        super(Suppliers.ofInstance(repoDb), Suppliers.ofInstance(new PGObjectDatabase(configdb,
-                platform, STAGE)));
-
+    public PGStagingDatabase(ObjectDatabase repoDb, ConfigDatabase configdb,
+            PGObjectDatabase stagingDb) {
+        super(Suppliers.ofInstance(repoDb), Suppliers.ofInstance(stagingDb));
         this.configdb = configdb;
-        this.platform = platform;
     }
 
     @Override
@@ -117,16 +102,6 @@ public class PGStagingDatabase extends AbstractStagingDatabase {
         for (Conflict c : Iterables.transform(get(namespace, null, cx), StringToConflict.INSTANCE)) {
             removeConflict(namespace, c.getPath());
         }
-    }
-
-    @Override
-    public void configure() throws RepositoryConnectionException {
-        RepositoryConnectionException.StorageType.STAGING.configure(configdb, FORMAT_NAME, VERSION);
-    }
-
-    @Override
-    public void checkConfig() throws RepositoryConnectionException {
-        RepositoryConnectionException.StorageType.STAGING.verify(configdb, FORMAT_NAME, VERSION);
     }
 
     /**

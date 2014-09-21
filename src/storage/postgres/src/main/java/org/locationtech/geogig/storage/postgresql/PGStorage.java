@@ -4,6 +4,8 @@
  */
 package org.locationtech.geogig.storage.postgresql;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import java.io.File;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -17,6 +19,7 @@ import javax.sql.DataSource;
 
 import org.locationtech.geogig.api.Platform;
 import org.locationtech.geogig.api.plumbing.ResolveGeogigDir;
+import org.locationtech.geogig.storage.ConfigDatabase;
 import org.slf4j.Logger;
 
 import com.google.common.base.Optional;
@@ -38,7 +41,9 @@ public class PGStorage {
     /**
      * Implementation version.
      */
-    public static final String VERSION = "0.1";
+    public static final String VERSION2 = "2";
+
+    public static final String VERSION3 = "3";
 
     static Map<Connection, Map<String, PreparedStatement>> OPEN_STATEMENTS = new IdentityHashMap<>();
 
@@ -105,7 +110,7 @@ public class PGStorage {
         return sql;
     }
 
-    synchronized static DataSource newDataSource(File db) {
+    synchronized static DataSource newDataSource(ConfigDatabase configDb) {
         String driverName;
         try {
             Class.forName("shaded.org.postgresql.Driver");
@@ -119,11 +124,22 @@ public class PGStorage {
             }
         }
 
-        String server = "localhost";
-        int portNumber = 5432;
-        String databaseName = "osm_shape";
-        String user = "postgres";
-        String password = "geo123";
+        Optional<String> serverConf = configDb.get("postgres.server");
+        Optional<Integer> portNumberConf = configDb.get("postgres.port", Integer.class);
+        Optional<String> databaseNameConf = configDb.get("postgres.database");
+        Optional<String> userConf = configDb.get("postgres.user");
+        Optional<String> passwordConf = configDb.get("postgres.password");
+        
+        checkState(serverConf.isPresent(), "postgres.server config is not set");
+        checkState(databaseNameConf.isPresent(), "postgres.database config is not set");
+        checkState(userConf.isPresent(), "postgres.user config is not set");
+        checkState(passwordConf.isPresent(), "postgres.password config is not set");
+
+        String server = serverConf.get();
+        int portNumber = portNumberConf.or(5432);
+        String databaseName = databaseNameConf.get();
+        String user = userConf.get();
+        String password = passwordConf.get();
         Config config = new Config(driverName, server, portNumber, databaseName, user, password);
         BoneCPDataSource dataSource = DATASOURCE_POOL.acquire(config);
         return dataSource;

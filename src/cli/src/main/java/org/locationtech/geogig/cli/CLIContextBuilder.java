@@ -35,9 +35,12 @@ import org.locationtech.geogig.storage.fs.FileRefDatabase;
 import org.locationtech.geogig.storage.mongo.MongoGraphDatabase;
 import org.locationtech.geogig.storage.mongo.MongoObjectDatabase;
 import org.locationtech.geogig.storage.mongo.MongoStagingDatabase;
-import org.locationtech.geogig.storage.postgresql.PGGraphDatabase;
-import org.locationtech.geogig.storage.postgresql.PGObjectDatabase;
-import org.locationtech.geogig.storage.postgresql.PGStagingDatabase;
+import org.locationtech.geogig.storage.postgresql.PGGraphDatabaseV2;
+import org.locationtech.geogig.storage.postgresql.PGGraphDatabaseV3;
+import org.locationtech.geogig.storage.postgresql.PGObjectDatabaseV2;
+import org.locationtech.geogig.storage.postgresql.PGObjectDatabaseV3;
+import org.locationtech.geogig.storage.postgresql.PGStagingDatabaseV2;
+import org.locationtech.geogig.storage.postgresql.PGStagingDatabaseV3;
 import org.locationtech.geogig.storage.postgresql.PGStorage;
 import org.locationtech.geogig.storage.sqlite.SQLiteStorage;
 import org.locationtech.geogig.storage.sqlite.XerialGraphDatabase;
@@ -108,8 +111,13 @@ public class CLIContextBuilder extends ContextBuilder {
                     .in(Scopes.SINGLETON);
 
             objectPlugins //
-                    .addBinding(new VersionedFormat(PGStorage.FORMAT_NAME, PGStorage.VERSION))//
-                    .to(PGObjectDatabase.class)//
+                    .addBinding(new VersionedFormat(PGStorage.FORMAT_NAME, PGStorage.VERSION2))//
+                    .to(PGObjectDatabaseV2.class)//
+                    .in(Scopes.SINGLETON);
+
+            objectPlugins //
+                    .addBinding(new VersionedFormat(PGStorage.FORMAT_NAME, PGStorage.VERSION3))//
+                    .to(PGObjectDatabaseV3.class)//
                     .in(Scopes.SINGLETON);
 
             MapBinder<VersionedFormat, StagingDatabase> stagingPlugins = MapBinder.newMapBinder(
@@ -137,8 +145,12 @@ public class CLIContextBuilder extends ContextBuilder {
                     .in(Scopes.SINGLETON);
 
             stagingPlugins //
-                    .addBinding(new VersionedFormat(PGStorage.FORMAT_NAME, PGStorage.VERSION))//
-                    .to(PGStagingDatabase.class)//
+                    .addBinding(new VersionedFormat(PGStorage.FORMAT_NAME, PGStorage.VERSION2))//
+                    .to(PGStagingDatabaseV2.class)//
+                    .in(Scopes.SINGLETON);
+            stagingPlugins //
+                    .addBinding(new VersionedFormat(PGStorage.FORMAT_NAME, PGStorage.VERSION3))//
+                    .to(PGStagingDatabaseV3.class)//
                     .in(Scopes.SINGLETON);
 
             MapBinder<VersionedFormat, GraphDatabase> graphPlugins = MapBinder.newMapBinder(
@@ -166,8 +178,12 @@ public class CLIContextBuilder extends ContextBuilder {
                     .in(Scopes.SINGLETON);
 
             graphPlugins //
-                    .addBinding(new VersionedFormat(PGStorage.FORMAT_NAME, PGStorage.VERSION))//
-                    .to(PGGraphDatabase.class)//
+                    .addBinding(new VersionedFormat(PGStorage.FORMAT_NAME, PGStorage.VERSION2))//
+                    .to(PGGraphDatabaseV2.class)//
+                    .in(Scopes.SINGLETON);
+            graphPlugins //
+                    .addBinding(new VersionedFormat(PGStorage.FORMAT_NAME, PGStorage.VERSION3))//
+                    .to(PGGraphDatabaseV3.class)//
                     .in(Scopes.SINGLETON);
         }
     }

@@ -6,13 +6,10 @@ package org.locationtech.geogig.storage.postgresql;
 
 import static java.lang.String.format;
 import static org.locationtech.geogig.storage.postgresql.PGStorage.FORMAT_NAME;
-import static org.locationtech.geogig.storage.postgresql.PGStorage.VERSION;
 import static org.locationtech.geogig.storage.postgresql.PGStorage.closeDataSource;
-import static org.locationtech.geogig.storage.postgresql.PGStorage.geogigDir;
 import static org.locationtech.geogig.storage.postgresql.PGStorage.log;
 import static org.locationtech.geogig.storage.postgresql.PGStorage.newDataSource;
 
-import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -39,17 +36,14 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.inject.Inject;
 
 /**
- * Base class for SQLite based graph database.
+ * Base class for PostgreSQL based graph database.
  * 
  * @author Justin Deoliveira (Boundless)
  * @author Gabriel Roldan (Boundless)
- * 
- * @param <C> Connection type.
  */
-public class PGGraphDatabase implements GraphDatabase {
+abstract class PGGraphDatabase implements GraphDatabase {
     static Logger LOG = LoggerFactory.getLogger(PGGraphDatabase.class);
 
     static final String NODES = "nodes";
@@ -66,16 +60,18 @@ public class PGGraphDatabase implements GraphDatabase {
 
     private DataSource dataSource;
 
-    @Inject
-    public PGGraphDatabase(ConfigDatabase configdb, Platform platform) {
+    private final String formatVersion;
+
+    public PGGraphDatabase(ConfigDatabase configdb, Platform platform, String formatVersion) {
         this.configdb = configdb;
         this.platform = platform;
+        this.formatVersion = formatVersion;
     }
 
     @Override
     public synchronized void open() {
         if (dataSource == null) {
-            dataSource = connect(geogigDir(platform));
+            dataSource = connect();
             init(dataSource);
         }
     }
@@ -95,12 +91,14 @@ public class PGGraphDatabase implements GraphDatabase {
 
     @Override
     public void configure() throws RepositoryConnectionException {
-        RepositoryConnectionException.StorageType.GRAPH.configure(configdb, FORMAT_NAME, VERSION);
+        RepositoryConnectionException.StorageType.GRAPH.configure(configdb, FORMAT_NAME,
+                formatVersion);
     }
 
     @Override
     public void checkConfig() throws RepositoryConnectionException {
-        RepositoryConnectionException.StorageType.GRAPH.verify(configdb, FORMAT_NAME, VERSION);
+        RepositoryConnectionException.StorageType.GRAPH
+                .verify(configdb, FORMAT_NAME, formatVersion);
     }
 
     @Override
@@ -199,8 +197,8 @@ public class PGGraphDatabase implements GraphDatabase {
     /**
      * Opens a database connection, returning the object representing connection state.
      */
-    protected DataSource connect(File geogigDir) {
-        return newDataSource(new File(geogigDir, "graph.db"));
+    protected DataSource connect() {
+        return newDataSource(configdb);
     }
 
     /**
