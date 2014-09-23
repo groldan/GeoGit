@@ -9,18 +9,11 @@
  */
 package org.locationtech.geogig.remote;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Set;
-
-import javax.annotation.Nullable;
 
 import org.locationtech.geogig.api.Bounded;
 import org.locationtech.geogig.api.Bucket;
@@ -28,7 +21,6 @@ import org.locationtech.geogig.api.Context;
 import org.locationtech.geogig.api.GeoGIG;
 import org.locationtech.geogig.api.Node;
 import org.locationtech.geogig.api.ObjectId;
-import org.locationtech.geogig.api.ProgressListener;
 import org.locationtech.geogig.api.Ref;
 import org.locationtech.geogig.api.RevCommit;
 import org.locationtech.geogig.api.RevObject;
@@ -36,23 +28,27 @@ import org.locationtech.geogig.api.RevObject.TYPE;
 import org.locationtech.geogig.api.RevTag;
 import org.locationtech.geogig.api.RevTree;
 import org.locationtech.geogig.api.SymRef;
+import org.locationtech.geogig.api.plumbing.DiffTree;
 import org.locationtech.geogig.api.plumbing.ForEachRef;
 import org.locationtech.geogig.api.plumbing.RefParse;
+import org.locationtech.geogig.api.plumbing.RevObjectParse;
 import org.locationtech.geogig.api.plumbing.UpdateRef;
 import org.locationtech.geogig.api.plumbing.UpdateSymRef;
-import org.locationtech.geogig.api.plumbing.diff.PostOrderDiffWalk;
-import org.locationtech.geogig.api.plumbing.diff.PostOrderDiffWalk.Consumer;
+import org.locationtech.geogig.api.plumbing.diff.DiffEntry;
 import org.locationtech.geogig.api.porcelain.SynchronizationException;
 import org.locationtech.geogig.repository.Repository;
 import org.locationtech.geogig.storage.BulkOpListener;
 import org.locationtech.geogig.storage.BulkOpListener.CountingListener;
 import org.locationtech.geogig.storage.ObjectDatabase;
 
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterators;
 
 /**
  * An implementation of a remote repository that exists on the local machine.
@@ -107,13 +103,8 @@ class LocalRemoteRepo extends AbstractRemoteRepo {
      */
     @Override
     public void close() throws IOException {
-        if (remoteGeoGig != null) {
-            try {
-                remoteGeoGig.close();
-            } finally {
-                remoteGeoGig = null;
-            }
-        }
+        remoteGeoGig.close();
+
     }
 
     /**
@@ -166,18 +157,14 @@ class LocalRemoteRepo extends AbstractRemoteRepo {
      * @param fetchLimit the maximum depth to fetch
      */
     @Override
-    public void fetchNewData(Ref ref, Optional<Integer> fetchLimit, ProgressListener progress) {
+    public void fetchNewData(Ref ref, Optional<Integer> fetchLimit) {
 
         CommitTraverser traverser = getFetchTraverser(fetchLimit);
 
         try {
-            progress.setDescription("Fetching objects from " + ref.getName());
-            progress.setProgress(0);
             traverser.traverse(ref.getObjectId());
-            List<ObjectId> toSend = new LinkedList<ObjectId>(traverser.commits);
-            Collections.reverse(toSend);// send oldest commits first
-            for (ObjectId newHeadId : toSend) {
-                walkHead(newHeadId, true, progress);
+            while (!traverser.commits.isEmpty()) {
+                walkHead(traverser.commits.pop(), true);
             }
 
         } catch (Exception e) {
@@ -192,9 +179,7 @@ class LocalRemoteRepo extends AbstractRemoteRepo {
      * @param refspec the refspec to push to
      */
     @Override
-    public void pushNewData(final Ref ref, final String refspec, final ProgressListener progress)
-            throws SynchronizationException {
-
+    public void pushNewData(Ref ref, String refspec) throws SynchronizationException {
         Optional<Ref> remoteRef = remoteGeoGig.command(RefParse.class).setName(refspec).call();
         remoteRef = remoteRef.or(remoteGeoGig.command(RefParse.class)
                 .setName(Ref.TAGS_PREFIX + refspec).call());
@@ -202,29 +187,30 @@ class LocalRemoteRepo extends AbstractRemoteRepo {
 
         CommitTraverser traverser = getPushTraverser(remoteRef);
 
-        traverser.traverse(ref.getObjectId());
-        progress.setDescription("Uploading objects to " + refspec);
-        progress.setProgress(0);
-        while (!traverser.commits.isEmpty()) {
-            ObjectId commitId = traverser.commits.pop();
-            walkHead(commitId, false, progress);
-        }
-
-        String nameToSet = remoteRef.isPresent() ? remoteRef.get().getName() : Ref.HEADS_PREFIX
-                + refspec;
-
-        Ref updatedRef = remoteGeoGig.command(UpdateRef.class).setName(nameToSet)
-                .setNewValue(ref.getObjectId()).call().get();
-
-        Ref remoteHead = headRef();
-        if (remoteHead instanceof SymRef) {
-            if (((SymRef) remoteHead).getTarget().equals(updatedRef.getName())) {
-                remoteGeoGig.command(UpdateSymRef.class).setName(Ref.HEAD)
-                        .setNewValue(ref.getName()).call();
-                RevCommit commit = remoteGeoGig.getRepository().getCommit(ref.getObjectId());
-                remoteGeoGig.getRepository().workingTree().updateWorkHead(commit.getTreeId());
-                remoteGeoGig.getRepository().index().updateStageHead(commit.getTreeId());
+        try {
+            traverser.traverse(ref.getObjectId());
+            while (!traverser.commits.isEmpty()) {
+                walkHead(traverser.commits.pop(), false);
             }
+
+            String nameToSet = remoteRef.isPresent() ? remoteRef.get().getName() : Ref.HEADS_PREFIX
+                    + refspec;
+
+            Ref updatedRef = remoteGeoGig.command(UpdateRef.class).setName(nameToSet)
+                    .setNewValue(ref.getObjectId()).call().get();
+
+            Ref remoteHead = headRef();
+            if (remoteHead instanceof SymRef) {
+                if (((SymRef) remoteHead).getTarget().equals(updatedRef.getName())) {
+                    remoteGeoGig.command(UpdateSymRef.class).setName(Ref.HEAD)
+                            .setNewValue(ref.getName()).call();
+                    RevCommit commit = remoteGeoGig.getRepository().getCommit(ref.getObjectId());
+                    remoteGeoGig.getRepository().workingTree().updateWorkHead(commit.getTreeId());
+                    remoteGeoGig.getRepository().index().updateStageHead(commit.getTreeId());
+                }
+            }
+        } catch (Exception e) {
+            Throwables.propagate(e);
         }
     }
 
@@ -234,171 +220,128 @@ class LocalRemoteRepo extends AbstractRemoteRepo {
      * @param refspec the refspec to delete
      */
     @Override
-    public Optional<Ref> deleteRef(String refspec) {
-        Optional<Ref> deletedRef = remoteGeoGig.command(UpdateRef.class).setName(refspec)
-                .setDelete(true).call();
-        return deletedRef;
+    public void deleteRef(String refspec) {
+        remoteGeoGig.command(UpdateRef.class).setName(refspec).setDelete(true).call();
     }
 
-    protected void walkHead(final ObjectId newHeadId, final boolean fetch,
-            final ProgressListener progress) {
-
-        Repository from = localRepository;
-        Repository to = remoteGeoGig.getRepository();
+    protected void walkHead(ObjectId headId, boolean fetch) {
+        Repository fromRepo = localRepository;
+        Repository toRepo = remoteGeoGig.getRepository();
         if (fetch) {
-            Repository tmp = to;
-            to = from;
-            from = tmp;
+            Repository tmp = toRepo;
+            toRepo = fromRepo;
+            fromRepo = tmp;
         }
-        final ObjectDatabase fromDb = from.objectDatabase();
-        final ObjectDatabase toDb = to.objectDatabase();
+        Optional<RevObject> object = fromRepo.command(RevObjectParse.class).setObjectId(headId)
+                .call();
 
-        final RevObject object = fromDb.get(newHeadId);
-
-        RevCommit commit = null;
-        RevTag tag = null;
-
-        if (object.getType().equals(TYPE.COMMIT)) {
-            commit = (RevCommit) object;
-        } else if (object.getType().equals(TYPE.TAG)) {
-            tag = (RevTag) object;
-            commit = fromDb.getCommit(tag.getCommitId());
-        }
-        if (commit != null) {
-            final RevTree newTree = fromDb.getTree(commit.getTreeId());
-            List<ObjectId> parentIds = new ArrayList<>(commit.getParentIds());
-            if (parentIds.isEmpty()) {
-                parentIds.add(ObjectId.NULL);
+        ObjectDatabase from = fromRepo.objectDatabase();
+        ObjectDatabase to = toRepo.objectDatabase();
+        if (object.isPresent()) {
+            if (object.get().getType().equals(TYPE.COMMIT)) {
+                RevCommit commit = (RevCommit) object.get();
+                walkCommit(commit, fromRepo, toRepo);
+            } else if (object.get().getType().equals(TYPE.TAG)) {
+                RevTag tag = (RevTag) object.get();
+                RevCommit commit = from.getCommit(tag.getCommitId());
+                walkCommit(commit, fromRepo, toRepo);
+                to.put(tag);
             }
-            RevTree oldTree = RevTree.EMPTY;
-            // the diff against each parent is not working. For some reason some buckets that are
-            // equal between the two ends of the comparison never get transferred (at some point
-            // they shouldn't be equal and so the Consumer notified of it/them). Yet with the target
-            // databse exists check for each tree the performance is good enough.
-            // for (ObjectId parentId : parentIds) {
-            // if (!parentId.isNull()) {
-            // RevCommit parent = fromDb.getCommit(parentId);
-            // oldTree = fromDb.getTree(parent.getTreeId());
-            // }
-            copyNewObjects(oldTree, newTree, fromDb, toDb, progress);
-            // }
-            Preconditions.checkState(toDb.exists(newTree.getId()));
-
-            toDb.put(commit);
-        }
-        if (tag != null) {
-            toDb.put(tag);
         }
     }
 
-    private void copyNewObjects(RevTree oldTree, RevTree newTree, final ObjectDatabase fromDb,
-            final ObjectDatabase toDb, final ProgressListener progress) {
-        checkNotNull(oldTree);
-        checkNotNull(newTree);
-        checkNotNull(fromDb);
-        checkNotNull(toDb);
-        checkNotNull(progress);
-
-        // the diff walk uses fromDb as both left and right data source since we're comparing what
-        // we have in the "origin" database against trees on the same repository
-        PostOrderDiffWalk diffWalk = new PostOrderDiffWalk(oldTree, newTree, fromDb, fromDb);
-
-        // holds object ids that need to be copied to the target db. Pruned when it reaches a
-        // threshold.
-        final Set<ObjectId> ids = new HashSet<ObjectId>();
-
-        // This filter further refines the post order diff walk by making it ignore trees/buckets
-        // that are already present in the target db
-        Predicate<Bounded> filter = new Predicate<Bounded>() {
-
-            @Override
-            public boolean apply(@Nullable Bounded b) {
-                if (b == null) {
-                    return false;
-                }
-                if (progress.isCanceled()) {
-                    return false;// abort traversal
-                }
-                ObjectId id;
-                if (b instanceof Node) {
-                    Node node = (Node) b;
-                    if (RevObject.TYPE.TREE.equals(node.getType())) {
-                        // check of existence of trees only. For features the diff filtering is good
-                        // enough and checking for existence on each feature would be killer
-                        // performance wise
-                        id = node.getObjectId();
-                    } else {
-                        return true;
-                    }
-                } else {
-                    id = ((Bucket) b).id();
-                }
-                boolean exists = ids.contains(id) || toDb.exists(id);
-                return !exists;
-            }
-        };
-
-        // receives notifications of feature/bucket/tree diffs. Only interested in the "new"/right
-        // side of the comparisons
-        Consumer consumer = new Consumer() {
-            final int bulkSize = 10_000;
-
-            @Override
-            public void feature(@Nullable Node left, Node right) {
-                add(left);
-                add(right);
-            }
-
-            @Override
-            public void tree(@Nullable Node left, Node right) {
-                add(left);
-                add(right);
-            }
-
-            private void add(@Nullable Node node) {
-                if (node == null) {
-                    return;
-                }
-                ids.add(node.getObjectId());
-                Optional<ObjectId> metadataId = node.getMetadataId();
-                if (metadataId.isPresent()) {
-                    ids.add(metadataId.get());
-                }
-                checkLimitAndCopy();
-            }
-
-            @Override
-            public void bucket(int bucketIndex, int bucketDepth, @Nullable Bucket left, Bucket right) {
-                if (left != null) {
-                    ids.add(left.id());
-                }
-                if (right != null) {
-                    ids.add(right.id());
-                }
-                checkLimitAndCopy();
-            }
-
-            private void checkLimitAndCopy() {
-                if (ids.size() >= bulkSize) {
-                    copy(ids, fromDb, toDb, progress);
-                    ids.clear();
-                }
-            }
-        };
-        diffWalk.walk(filter, consumer);
-        // copy remaining objects
-        copy(ids, fromDb, toDb, progress);
+    protected void walkCommit(RevCommit commit, Repository from, Repository to) {
+        walkTree(from, to, commit.getTreeId());
+        to.objectDatabase().put(commit);
     }
 
-    private void copy(Set<ObjectId> ids, ObjectDatabase from, ObjectDatabase to,
-            ProgressListener progress) {
-        if (ids.isEmpty()) {
+    private void walkTree(final Repository from, final Repository to, final ObjectId treeId) {
+        final ObjectDatabase target = to.objectDatabase();
+        if (target.exists(treeId)) {
             return;
         }
-        CountingListener countingListener = BulkOpListener.newCountingListener();
-        to.putAll(from.getAll(ids), countingListener);
-        int inserted = countingListener.inserted();
-        progress.setProgress(progress.getProgress() + inserted);
+        System.err.println("walking tree " + treeId);
+        final DiffTree difftree = from.command(DiffTree.class);
+        difftree.setOldTree(RevTree.EMPTY_TREE_ID);
+        difftree.setNewTree(treeId);
+        difftree.setRecursive(true);
+        difftree.setReportTrees(true);
+
+        final Set<ObjectId> metadataIds = new HashSet<>();
+
+        Predicate<Bounded> customFilter = new Predicate<Bounded>() {
+            private ObjectDatabase target = to.objectDatabase();
+
+            @Override
+            public boolean apply(Bounded input) {
+                boolean exists = false;
+                if (input instanceof Node) {
+                    Node n = (Node) input;
+                    if (TYPE.TREE.equals(n.getType())) {
+                        exists = target.exists(n.getObjectId());
+                    }
+                } else if (input instanceof Bucket) {
+                    Bucket b = (Bucket) input;
+                    exists = target.exists(b.id());
+                    if (!exists) {
+                        metadataIds.add(b.id());
+                    }
+                }
+                return true;
+            }
+        };
+        difftree.setCustomFilter(customFilter);
+
+        final Iterable<ObjectId> missingIds = new Iterable<ObjectId>() {
+            @Override
+            public Iterator<ObjectId> iterator() {
+                System.err.println("calling difftree...");
+                Iterator<DiffEntry> entries = difftree.call();
+                System.err.println("difftree returned");
+                Iterator<ObjectId> ids = Iterators.transform(entries,
+                        new Function<DiffEntry, ObjectId>() {
+                            @Override
+                            public ObjectId apply(DiffEntry e) {
+                                try {
+                                    Node node = e.getNewObject().getNode();
+                                    if (node.getMetadataId().isPresent()) {
+                                        metadataIds.add(node.getMetadataId().get());
+                                    }
+                                    return node.getObjectId();
+                                } catch (Exception ex) {
+                                    ex.printStackTrace();
+                                    throw Throwables.propagate(ex);
+                                }
+                            }
+                        });
+                return ids;
+            }
+        };
+        ObjectDatabase source = from.objectDatabase();
+
+        System.err.println("querying objects....");
+        Iterator<RevObject> all = source.getAll(missingIds);
+        System.err.println("traversing objects....");
+        Stopwatch s = Stopwatch.createStarted();
+        long count = 0;
+        while (all.hasNext()) {
+            all.next();
+            count++;
+            if (count % 100_000 == 0) {
+                System.err.printf("%,d\n", count);
+            }
+        }
+        System.err.printf("%,d\n", count);
+        System.err.printf("traversed %,d objects in %s\n", count, s.stop());
+
+        // CountingListener cl = BulkOpListener.newCountingListener();
+        // Stopwatch sw = Stopwatch.createStarted();
+        // target.putAll(source.getAll(missingIds), cl);
+        // System.err.printf("Inserted %,d objects in %s\n", cl.inserted(), sw.stop());
+        // cl = BulkOpListener.newCountingListener();
+        // sw.reset().start();
+        // target.putAll(source.getAll(metadataIds), cl);
+        // System.err.printf("Inserted %,d metadata objects in %s\n", cl.inserted(), sw.stop());
     }
 
     /**

@@ -52,7 +52,7 @@ class PGDataSourceManager extends ConnectionManager<Config, BoneCPDataSource> {
     @Override
     protected BoneCPDataSource connect(Config config) {
         ForwardingDataSource ds = new ForwardingDataSource(config);
-        System.err.println(ds.getUrl());
+        //System.err.println(ds.getUrl());
         BoneCPConfig bonceCPConfig = new BoneCPConfig();
         bonceCPConfig.setMaxConnectionsPerPartition(20);
         bonceCPConfig.setDatasourceBean(ds);
