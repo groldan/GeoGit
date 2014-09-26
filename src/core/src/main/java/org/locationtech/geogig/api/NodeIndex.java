@@ -7,14 +7,11 @@
  * Contributors:
  * Gabriel Roldan (Boundless) - initial implementation
  */
-package org.locationtech.geogig.repository;
+package org.locationtech.geogig.api;
 
 import java.io.Closeable;
 import java.util.Iterator;
 
-import org.locationtech.geogig.api.Node;
-import org.locationtech.geogig.api.RevTree;
-import org.locationtech.geogig.api.RevTreeBuilder;
 import org.locationtech.geogig.storage.NodePathStorageOrder;
 import org.locationtech.geogig.storage.NodeStorageOrder;
 
@@ -23,7 +20,7 @@ import org.locationtech.geogig.storage.NodeStorageOrder;
  * creating large {@link RevTree} instances by first building an index of Nodes and then adding all
  * nodes to the {@link RevTreeBuilder} in {@link NodePathStorageOrder}'s order.
  */
-interface NodeIndex extends Closeable {
+public interface NodeIndex extends Closeable {
 
     /**
      * Adds a tree node to the index.
@@ -34,6 +31,8 @@ interface NodeIndex extends Closeable {
      * @return the list of added nodes sorted according to the {@link NodeStorageOrder} comparator.
      */
     public abstract Iterator<Node> nodes();
+
+    public long size();
 
     /**
      * Closes and releases any resource used by this index. This method is idempotent.

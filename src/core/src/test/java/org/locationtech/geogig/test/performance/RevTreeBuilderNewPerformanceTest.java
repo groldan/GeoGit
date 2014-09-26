@@ -18,7 +18,7 @@ import org.locationtech.geogig.api.ObjectId;
 import org.locationtech.geogig.api.Platform;
 import org.locationtech.geogig.api.RevObject.TYPE;
 import org.locationtech.geogig.api.RevTree;
-import org.locationtech.geogig.api.RevTreeBuilder;
+import org.locationtech.geogig.api.RevTreeBuilderNew;
 import org.locationtech.geogig.storage.ObjectDatabase;
 import org.locationtech.geogig.test.integration.RepositoryTestCase;
 
@@ -26,7 +26,7 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.AbstractIterator;
 import com.vividsolutions.jts.geom.Envelope;
 
-public class RevTreeBuilderPerformanceTest extends RepositoryTestCase {
+public class RevTreeBuilderNewPerformanceTest extends RepositoryTestCase {
 
     private ObjectDatabase odb;
 
@@ -74,7 +74,7 @@ public class RevTreeBuilderPerformanceTest extends RepositoryTestCase {
 
     private void testCreateTree(final int nodeCount) {
         Iterator<Node> nodes = nodes(nodeCount);
-        RevTreeBuilder builder = new RevTreeBuilder(odb);
+        RevTreeBuilderNew builder = new RevTreeBuilderNew(odb, platform);
 
         System.err.printf("Inserting %,d nodes...", nodeCount);
         Stopwatch sw = Stopwatch.createStarted();

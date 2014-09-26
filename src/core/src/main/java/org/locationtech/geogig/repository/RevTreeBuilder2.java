@@ -17,7 +17,9 @@ import java.util.concurrent.ExecutorService;
 
 import javax.annotation.Nullable;
 
+import org.locationtech.geogig.api.FileNodeIndex;
 import org.locationtech.geogig.api.Node;
+import org.locationtech.geogig.api.NodeIndex;
 import org.locationtech.geogig.api.ObjectId;
 import org.locationtech.geogig.api.Platform;
 import org.locationtech.geogig.api.RevFeatureType;
@@ -62,7 +64,7 @@ class RevTreeBuilder2 {
         this.db = db;
         this.original = origTree;
         this.defaultMetadataId = defaultMetadataId;
-        this.nodeIndex = new FileNodeIndex(platform, executorService);
+        this.nodeIndex = new FileNodeIndex(platform);
     }
 
     public ObjectId getDefaultMetadataId() {

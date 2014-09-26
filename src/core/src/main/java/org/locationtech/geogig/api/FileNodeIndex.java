@@ -7,7 +7,7 @@
  * Contributors:
  * Gabriel Roldan (Boundless) - initial implementation
  */
-package org.locationtech.geogig.repository;
+package org.locationtech.geogig.api;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -32,12 +32,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-import org.locationtech.geogig.api.Node;
-import org.locationtech.geogig.api.Platform;
 import org.locationtech.geogig.storage.NodePathStorageOrder;
 import org.locationtech.geogig.storage.NodeStorageOrder;
 import org.locationtech.geogig.storage.datastream.FormatCommonV2;
@@ -46,20 +42,24 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
 import com.google.common.collect.UnmodifiableIterator;
 import com.google.common.io.Closeables;
+import com.google.common.util.concurrent.Futures;
 import com.ning.compress.lzf.LZFInputStream;
 import com.ning.compress.lzf.LZFOutputStream;
 
-class FileNodeIndex implements Closeable, NodeIndex {
+public class FileNodeIndex implements Closeable, NodeIndex {
 
-    private static final int PARTITION_SIZE = 1000 * 1000;
+    private static final NodeStorageOrder NODE_COMPARATOR = new NodeStorageOrder();
+
+    private static final int PARTITION_SIZE = 1000_000;
 
     private static final class IndexPartition {
 
+        private static final NodePathStorageOrder COMPARATOR = new NodePathStorageOrder();
+
         // use a TreeMap instead of a TreeSet to account for the rare case of a hash collision
-        private SortedMap<String, Node> cache = new TreeMap<>(new NodePathStorageOrder());
+        private SortedMap<String, Node> cache = new TreeMap<>(COMPARATOR);
 
         private File tmpFolder;
 
@@ -71,12 +71,12 @@ class FileNodeIndex implements Closeable, NodeIndex {
             cache.put(node.getName(), node);
         }
 
-        public Iterable<Node> getSortedNodes() {
-            return cache.values();
+        public Iterator<Node> getSortedNodes() {
+            return cache.values().iterator();
         }
 
         public File flush() {
-            Iterable<Node> cache = getSortedNodes();
+            Iterator<Node> nodes = getSortedNodes();
             final File file;
             try {
                 file = File.createTempFile("geogigNodes", ".idx", tmpFolder);
@@ -85,10 +85,11 @@ class FileNodeIndex implements Closeable, NodeIndex {
                 FastByteArrayOutputStream buf = new FastByteArrayOutputStream();
 
                 OutputStream fileOut = new BufferedOutputStream(new FileOutputStream(file),
-                        1024 * 1024);
+                        1024 * 16);
                 fileOut = new LZFOutputStream(fileOut);
                 try {
-                    for (Node node : cache) {
+                    while (nodes.hasNext()) {
+                        Node node = nodes.next();
                         buf.reset();
                         DataOutput out = new DataOutputStream(buf);
                         try {
@@ -120,15 +121,17 @@ class FileNodeIndex implements Closeable, NodeIndex {
 
     private List<CompositeNodeIterator> openIterators = new LinkedList<CompositeNodeIterator>();
 
-    private ExecutorService executorService;
-
     private File tmpFolder;
 
-    public FileNodeIndex(Platform platform, ExecutorService executorService) {
+    private static final int MAX_DEPTH_TRACKED_SIZE = 8;
+
+    private LevelSizeMatrix sizeMatrix = new LevelSizeMatrix(RevTree.MAX_BUCKETS,
+            MAX_DEPTH_TRACKED_SIZE);
+
+    public FileNodeIndex(Platform platform) {
         File tmpFolder = new File(platform.getTempDir(), "nodeindex" + Math.abs(random.nextInt()));
         checkState(tmpFolder.mkdirs());
         this.tmpFolder = tmpFolder;
-        this.executorService = executorService;
         this.currPartition = new IndexPartition(this.tmpFolder);
     }
 
@@ -153,6 +156,12 @@ class FileNodeIndex implements Closeable, NodeIndex {
         }
     }
 
+    private long size;
+
+    public long size() {
+        return size;
+    }
+
     @Override
     public synchronized void add(Node node) {
         currPartition.add(node);
@@ -160,21 +169,31 @@ class FileNodeIndex implements Closeable, NodeIndex {
             flush(currPartition);
             currPartition = new IndexPartition(this.tmpFolder);
         }
+        this.size++;
+        List<Integer> bucketsByDepth = NODE_COMPARATOR.bucketsByDepth(node);
+        for (int depth = 0; depth < MAX_DEPTH_TRACKED_SIZE; depth++) {
+            int bucketIndex = bucketsByDepth.get(depth).intValue();
+            sizeMatrix.add(bucketIndex, depth);
+        }
     }
 
     private void flush(final IndexPartition ip) {
-        indexFiles.add(executorService.submit(new Callable<File>() {
-
-            @Override
-            public File call() throws Exception {
-                return ip.flush();
-            }
-        }));
-
+        File flush = ip.flush();
+        indexFiles.add(Futures.immediateCheckedFuture(flush));
+        // indexFiles.add(executorService.submit(new Callable<File>() {
+        //
+        // @Override
+        // public File call() throws Exception {
+        // return ip.flush();
+        // }
+        // }));
     }
 
     @Override
     public Iterator<Node> nodes() {
+        System.err.print(sizeMatrix);
+        sizeMatrix.validate(size);
+
         List<File> files = new ArrayList<File>(indexFiles.size());
         try {
             for (Future<File> ff : indexFiles) {
@@ -185,9 +204,10 @@ class FileNodeIndex implements Closeable, NodeIndex {
             throw Throwables.propagate(Throwables.getRootCause(e));
         }
 
-        List<Node> unflushed = Lists.newArrayList(currPartition.getSortedNodes());
+        List<Node> cached = new ArrayList<>(currPartition.cache.size());
+        cached.addAll(currPartition.cache.values());
         currPartition.cache.clear();
-        return new CompositeNodeIterator(files, unflushed);
+        return new CompositeNodeIterator(files, cached.iterator());
     }
 
     private static class CompositeNodeIterator extends AbstractIterator<Node> {
@@ -198,7 +218,7 @@ class FileNodeIndex implements Closeable, NodeIndex {
 
         private UnmodifiableIterator<Node> delegate;
 
-        public CompositeNodeIterator(List<File> files, List<Node> unflushedAndSorted) {
+        public CompositeNodeIterator(List<File> files, Iterator<Node> unflushedAndSorted) {
 
             openIterators = new ArrayList<IndexIterator>();
             LinkedList<Iterator<Node>> iterators = new LinkedList<Iterator<Node>>();
@@ -207,8 +227,8 @@ class FileNodeIndex implements Closeable, NodeIndex {
                 openIterators.add(iterator);
                 iterators.add(iterator);
             }
-            if (!unflushedAndSorted.isEmpty()) {
-                iterators.add(unflushedAndSorted.iterator());
+            if (unflushedAndSorted.hasNext()) {
+                iterators.add(unflushedAndSorted);
             }
             delegate = Iterators.mergeSorted(iterators, order);
         }
@@ -283,4 +303,55 @@ class FileNodeIndex implements Closeable, NodeIndex {
         }
     }
 
+    /**
+     * Like an adjacency matrix but tracks number of nodes per bucket depth and bucket index
+     */
+    private static class LevelSizeMatrix {
+
+        private int[][] matrix;
+
+        public LevelSizeMatrix(final int maxBuckets, final int maxDepth) {
+            matrix = new int[maxBuckets][maxDepth];
+        }
+
+        public void validate(long size) {
+            final int maxBuckets = matrix.length;
+            final int maxDepth = matrix[0].length;
+            for (int depth = 0; depth < maxDepth; depth++) {
+                long depthSize = 0;
+                for (int index = 0; index < maxBuckets; index++) {
+                    depthSize += matrix[index][depth];
+                }
+                Preconditions.checkState(depthSize == size);
+            }
+        }
+
+        public void add(final int bucketIndex, final int bucketDepth) {
+            int size = matrix[bucketIndex][bucketDepth];
+            matrix[bucketIndex][bucketDepth] = size + 1;
+        }
+
+        public int getSize(final int bucketIndex, final int bucketDepth) {
+            int size = matrix[bucketIndex][bucketDepth];
+            return size;
+        }
+
+        public String toString() {
+            final int maxBuckets = matrix.length;
+            final int maxDepth = matrix[0].length;
+
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < maxBuckets; i++) {
+                for (int j = 0; j < maxDepth; j++) {
+                    sb.append(matrix[i][j]);
+                    if (j == maxDepth - 1) {
+                        break;
+                    }
+                    sb.append(", ");
+                }
+                sb.append('\n');
+            }
+            return sb.toString();
+        }
+    }
 }

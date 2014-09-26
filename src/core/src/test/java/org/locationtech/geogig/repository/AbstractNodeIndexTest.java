@@ -28,6 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.locationtech.geogig.api.Node;
+import org.locationtech.geogig.api.NodeIndex;
 import org.locationtech.geogig.api.ObjectId;
 import org.locationtech.geogig.api.Platform;
 import org.locationtech.geogig.api.RevObject.TYPE;
@@ -54,7 +55,7 @@ public abstract class AbstractNodeIndexTest extends Assert {
         tempFolder.newFolder(".geogig");
         File workingDirectory = tempFolder.getRoot();
         Platform platform = new TestPlatform(workingDirectory);
-        executorService = Executors.newFixedThreadPool(4);
+        executorService = Executors.newFixedThreadPool(2);
         index = createIndex(platform, executorService);
     }
 
@@ -71,6 +72,11 @@ public abstract class AbstractNodeIndexTest extends Assert {
         Iterator<Node> nodes = index.nodes();
         assertNotNull(nodes);
         assertFalse(nodes.hasNext());
+    }
+
+    @Test
+    public void test100() throws Exception {
+        testNodes(100);
     }
 
     @Test
@@ -117,25 +123,21 @@ public abstract class AbstractNodeIndexTest extends Assert {
         testOrder(count);
     }
 
-    @Ignore
     @Test
     public void test5M() throws Exception {
         testNodes(1000 * 1000 * 5);
     }
 
-    @Ignore
     @Test
     public void test10M() throws Exception {
         testNodes(1000 * 1000 * 10);
     }
 
-    @Ignore
     @Test
     public void test25M() throws Exception {
         testNodes(1000 * 1000 * 25);
     }
 
-    @Ignore
     @Test
     public void test50M() throws Exception {
         testNodes(1000 * 1000 * 50);

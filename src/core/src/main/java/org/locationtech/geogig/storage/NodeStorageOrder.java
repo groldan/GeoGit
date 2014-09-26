@@ -10,6 +10,7 @@
 package org.locationtech.geogig.storage;
 
 import java.io.Serializable;
+import java.util.List;
 
 import org.locationtech.geogig.api.Node;
 
@@ -37,5 +38,9 @@ public final class NodeStorageOrder extends Ordering<Node> implements Serializab
      */
     public Integer bucket(final Node ref, final int depth) {
         return nameOrder.bucket(ref.getName(), depth);
+    }
+
+    public List<Integer> bucketsByDepth(final Node node) {
+        return nameOrder.bucketsByDepth(node.getName());
     }
 }

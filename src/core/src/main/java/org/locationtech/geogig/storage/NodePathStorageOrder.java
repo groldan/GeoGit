@@ -10,6 +10,8 @@
 package org.locationtech.geogig.storage;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.locationtech.geogig.api.Node;
 import org.locationtech.geogig.api.ObjectId;
@@ -87,6 +89,21 @@ public final class NodePathStorageOrder extends Ordering<String> implements Seri
         return Integer.valueOf(bucket);
     }
 
+    public List<Integer> bucketsByDepth(final String nodeName) {
+        final int maxBuckets = RevTree.MAX_BUCKETS;
+        final long longBits = FNV1a64bitHash.fnv(nodeName).longValue();
+        List<Integer> buckets = new ArrayList<>(8);
+        for (int i = 0; i < 8; i++) {
+            int byteN = hashOrder.byteN(longBits, i);
+            Preconditions.checkState(byteN >= 0);
+            Preconditions.checkState(byteN < 256);
+
+            Integer bucket = Integer.valueOf((byteN * maxBuckets) / 256);
+            buckets.add(bucket);
+        }
+        return buckets;
+    }
+
     public UnsignedLong hashCodeLong(String name) {
         UnsignedLong fnv = FNV1a64bitHash.fnv(name);
         return fnv;
@@ -151,10 +168,15 @@ public final class NodePathStorageOrder extends Ordering<String> implements Seri
 
             final long longBits = fnv(nodeName).longValue();
 
+            return byteN(longBits, depth);
+        }
+
+        private int byteN(final long fnvHashLongBits, final int depth) {
+
             final int displaceBits = 8 * (7 - depth);// how many bits to right shift longBits to get
                                                      // the byte N
 
-            final int byteN = ((byte) (longBits >> displaceBits)) & 0xFF;
+            final int byteN = ((byte) (fnvHashLongBits >> displaceBits)) & 0xFF;
             return byteN;
         }
     }

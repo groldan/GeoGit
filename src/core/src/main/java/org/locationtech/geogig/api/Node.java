@@ -11,9 +11,12 @@ package org.locationtech.geogig.api;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.Comparator;
+
 import javax.annotation.Nullable;
 
 import org.locationtech.geogig.api.RevObject.TYPE;
+import org.locationtech.geogig.storage.NodeStorageOrder;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -24,6 +27,8 @@ import com.vividsolutions.jts.geom.Envelope;
  * 
  */
 public abstract class Node implements Bounded, Comparable<Node> {
+
+    private static final Comparator<Node> COMPARATOR = new NodeStorageOrder();
 
     /**
      * The name of the element
@@ -74,11 +79,11 @@ public abstract class Node implements Bounded, Comparable<Node> {
     public abstract TYPE getType();
 
     /**
-     * Provides for natural ordering of {@code Node}, based on {@link #getName() name}
+     * Provides for natural ordering of {@code Node}, based on {@link NodeStorageOrder}
      */
     @Override
-    public int compareTo(Node o) {
-        return name.compareTo(o.getName());
+    public int compareTo(Node node) {
+        return COMPARATOR.compare(this, node);
     }
 
     /**

@@ -11,13 +11,15 @@ package org.locationtech.geogig.repository;
 
 import java.util.concurrent.ExecutorService;
 
+import org.locationtech.geogig.api.FileNodeIndex;
+import org.locationtech.geogig.api.NodeIndex;
 import org.locationtech.geogig.api.Platform;
 
 public class FileNodeIndexTest extends AbstractNodeIndexTest {
 
     @Override
     protected NodeIndex createIndex(Platform platform, ExecutorService executorService) {
-        return new FileNodeIndex(platform, executorService);
+        return new FileNodeIndex(platform);
     }
 
 }
